@@ -39,24 +39,62 @@ export function initOverview() {
   document.getElementById('btn-sort-overview').onclick = openColumnSettings;
   document.getElementById('btn-sort-overview').textContent = '⚙️';
   window.addEventListener('holdings-changed', () => refreshAll());
-  renderGroupSelect();
+  renderFilterBar();
   refreshAll();
 }
 
-// 分组筛选
+// ===== 统一分类筛选栏（分组 + 赛道） =====
 let currentGroupId = 'all';
-function renderGroupSelect() {
-  const groups = store.getGroups();
+let currentFilter = '全部';
+
+function renderFilterBar() {
   const el = document.getElementById('overview-filters');
-  if (!el || !groups.length) return;
-  const opts = [{ id: 'all', name: '全部' }, ...groups];
-  const html = opts.map(g => `<button class="ov-filter-btn ${g.id===currentGroupId?'active':''}" data-gid="${g.id}">${esc(g.name)}</button>`).join('');
-  // 在筛选按钮前面插入
-  const existing = el.innerHTML;
-  el.innerHTML = `<span style="font-size:11px;color:var(--text-soft);margin-right:4px;">分组:</span>${html}<span style="margin:0 6px;color:#cbd5e1;">|</span>` + existing;
+  if (!el) return;
+  const groups = store.getGroups();
+  const custom = getCustomFilters();
+  const allCategories = ['全部', ...Object.keys(BUILTIN_FILTERS), ...custom.map(f => f.name), '其他'];
+
+  let html = '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';
+
+  // 分组（如果有）
+  if (groups.length) {
+    html += '<span style="font-size:10px;color:var(--text-soft);">分组</span>';
+    const opts = [{ id: 'all', name: '全部' }, ...groups];
+    html += opts.map(g => `<button class="ov-filter-btn ${g.id===currentGroupId?'active':''}" data-gid="${g.id}">${esc(g.name)}</button>`).join('');
+    html += '<span style="color:#cbd5e1;margin:0 4px;">|</span>';
+  }
+
+  // 赛道分类
+  html += '<span style="font-size:10px;color:var(--text-soft);">赛道</span>';
+  html += allCategories.map(name => {
+    const isCustom = custom.some(f => f.name === name);
+    return `<button class="ov-filter-btn ${name===currentFilter?'active':''}" data-f="${esc(name)}">
+      ${esc(name)}${isCustom ? `<span class="del-filter" data-del="${esc(name)}">×</span>` : ''}
+    </button>`;
+  }).join('');
+  html += `<button class="ov-filter-btn add-filter" id="btn-add-filter">+</button>`;
+
+  html += '</div>';
+  el.innerHTML = html;
+
+  // 事件绑定
   el.querySelectorAll('[data-gid]').forEach(btn => {
-    btn.onclick = () => { currentGroupId = btn.dataset.gid; renderGroupSelect(); refreshAll(true); };
+    btn.onclick = () => { currentGroupId = btn.dataset.gid; renderFilterBar(); refreshAll(true); };
   });
+  el.querySelectorAll('[data-f]').forEach(btn => {
+    btn.onclick = e => {
+      if (e.target.classList.contains('del-filter')) {
+        const name = e.target.dataset.del;
+        saveCustomFilters(getCustomFilters().filter(f => f.name !== name));
+        if (currentFilter === name) currentFilter = '全部';
+        renderFilterBar(); renderTable(); return;
+      }
+      currentFilter = btn.dataset.f;
+      renderFilterBar(); renderTable();
+    };
+  });
+  const addBtn = el.querySelector('#btn-add-filter');
+  if (addBtn) addBtn.onclick = openAddFilter;
 }
 
 export function onOverviewVisible() { refreshAll(); startAutoRefresh(); }
@@ -319,8 +357,10 @@ function renderTable() {
     return;
   }
 
+  // 赛道筛选
+  let filtered = fundRows.filter(f => matchFilter(f, currentFilter));
   const cols = getColumnConfig().filter(c => c.visible);
-  const totalMV = fundRows.reduce((s, f) => s + (f.mv || 0), 0);
+  const totalMV = filtered.reduce((s, f) => s + (f.mv || 0), 0);
 
   el.innerHTML = `
   <div class="ov-table-wrap">
@@ -333,7 +373,7 @@ function renderTable() {
         }).join('')}
       </tr></thead>
       <tbody>
-        ${fundRows.map(f => renderTableRow(f, totalMV, cols)).join('')}
+        ${filtered.map(f => renderTableRow(f, totalMV, cols)).join('')}
       </tbody>
     </table>
   </div>`;
