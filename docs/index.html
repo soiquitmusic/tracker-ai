@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#1e40af">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/app.css">
+  <title>基金AI助手</title>
+</head>
+<body>
+  <!-- 聊天页 -->
+  <section id="page-chat" class="page active">
+    <div class="chat-layout">
+      <!-- 会话侧边栏 -->
+      <div id="chat-sidebar" class="chat-sidebar">
+        <div class="sidebar-head">
+          <button id="btn-new-conv" class="btn primary full-w">+ 新对话</button>
+        </div>
+        <div id="conv-list" class="conv-list"></div>
+      </div>
+      <div id="sidebar-mask" class="sidebar-mask"></div>
+
+      <!-- 聊天主区 -->
+      <div class="chat-main">
+        <div class="chat-topbar">
+          <button id="btn-toggle-sidebar" class="btn icon-btn">☰</button>
+          <span id="chat-title" class="chat-title">新对话</span>
+          <select id="chat-profile-select" class="profile-select"></select>
+        </div>
+        <div id="chat-messages" class="chat-messages">
+          <div class="empty-hint">选择或新建一个对话开始</div>
+        </div>
+        <div class="chat-input-area">
+          <div id="pending-images" class="pending-images"></div>
+          <div class="input-row">
+            <button id="btn-pick-image" class="btn icon-btn" title="上传图片(仅Gemini)">📷</button>
+            <textarea id="chat-input" rows="1" placeholder="输入消息…" disabled></textarea>
+            <button id="btn-send" class="btn primary" disabled>发送</button>
+          </div>
+          <input id="chat-file-input" type="file" accept="image/*" multiple style="display:none">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 持仓页 -->
+  <section id="page-holdings" class="page">
+    <div class="page-header">
+      <h2>持仓</h2>
+      <div class="header-actions">
+        <button id="btn-sort-holdings" class="btn" title="收益排序">排序</button>
+        <button id="btn-refresh-holdings" class="btn">刷新行情</button>
+        <button id="btn-export-text" class="btn">导出</button>
+        <button id="btn-add-follow" class="btn">+ 关注</button>
+      </div>
+    </div>
+    <!-- 我的持仓 -->
+    <div class="section-collapse">
+      <div class="section-collapse-head" id="toggle-my-holdings">
+        <span class="collapse-label"><span class="collapse-arrow">▾</span> 我的持仓</span>
+        <div class="collapse-actions" onclick="event.stopPropagation()">
+          <button id="btn-snap-my" class="btn">📷</button>
+          <button id="btn-add-holding" class="btn">+ 添加</button>
+        </div>
+      </div>
+      <div id="my-holdings-body" class="section-collapse-body collapsed">
+        <div id="holdings-list" class="holdings-list"></div>
+      </div>
+    </div>
+    <!-- 关注持仓 -->
+    <div id="follow-sections"></div>
+    <input id="snapshot-file-input" type="file" accept="image/*" style="display:none">
+  </section>
+
+  <!-- 对比页 -->
+  <section id="page-compare" class="page">
+    <div class="page-header">
+      <h2>持仓对比</h2>
+    </div>
+    <div id="compare-picker" class="compare-picker"></div>
+    <div id="compare-summary" class="compare-summary"></div>
+    <div id="compare-filters" class="overview-filters"></div>
+    <div id="compare-list" class="compare-list">
+      <div class="empty-hint">请先添加持仓和关注对象</div>
+    </div>
+  </section>
+
+  <!-- 行情页 -->
+  <section id="page-overview" class="page">
+    <div class="page-header">
+      <h2>行情总览</h2>
+      <div class="header-actions">
+        <button id="btn-sort-overview" class="btn" title="收益排序">排序</button>
+        <button id="btn-refresh-overview" class="btn">刷新</button>
+        <span id="overview-time" class="ov-time"></span>
+      </div>
+    </div>
+    <div id="overview-summary" class="overview-summary"></div>
+    <div id="overview-filters" class="overview-filters"></div>
+    <div id="overview-list" class="overview-list">
+      <div class="empty-hint">暂无持仓，请先在持仓页添加</div>
+    </div>
+  </section>
+
+  <!-- 分析页 -->
+  <section id="page-analysis" class="page">
+    <div class="page-header">
+      <h2>分析</h2>
+    </div>
+    <!-- 紧凑顶部区：搜索 + 选择 + 按钮 -->
+    <div class="analysis-top-bar">
+      <div class="analysis-search-wrap">
+        <span class="analysis-search-icon">🔍</span>
+        <input id="analysis-search-input" type="text" placeholder="输入基金名称或代码…" class="analysis-search-input" autocomplete="off">
+        <button id="btn-analysis-search-clear" class="analysis-search-clear" title="清除">✕</button>
+        <div id="analysis-search-results" class="analysis-search-results" style="display:none;"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+        <span class="analysis-shortcut-chip" id="btn-pick-holdings" style="margin:0;">📋</span>
+        <button id="btn-analysis-start" class="btn primary" disabled style="font-size:12px;padding:6px 12px;white-space:nowrap;">🔬 分析</button>
+      </div>
+    </div>
+    <!-- 选中基金 -->
+    <div id="analysis-selected-card" class="analysis-selected-card" style="display:none;">
+      <span class="sel-name"></span>
+      <span class="sel-code-mini"></span>
+      <button class="sel-remove" id="btn-analysis-clear-selection">✕</button>
+    </div>
+    <!-- 结果区域 -->
+    <div id="analysis-results" class="analysis-results">
+      <div class="empty-hint">选择一只基金，点击「分析」</div>
+    </div>
+    <!-- 分析历史（可折叠） -->
+    <div class="analysis-history-section">
+      <div class="section-collapse-head" id="toggle-analysis-history" style="padding:8px 12px;">
+        <span class="collapse-arrow">▸</span> 分析历史 <span id="analysis-history-count" style="font-size:11px;color:var(--text-soft);"></span>
+        <button id="btn-clear-analysis-history" class="btn" style="margin-left:auto;font-size:10px;padding:2px 6px;" onclick="event.stopPropagation()">清空</button>
+      </div>
+      <div id="analysis-history-body" class="section-collapse-body collapsed">
+        <div id="analysis-history-list" class="analysis-history-list" style="padding:0 12px 8px;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 设置页 -->
+  <section id="page-settings" class="page">
+    <div class="page-header">
+      <h2>设置</h2>
+    </div>
+    <div class="settings-section">
+      <div class="section-head">
+        <h3>AI 档案</h3>
+        <button id="btn-add-profile" class="btn primary">+ 新建档案</button>
+      </div>
+      <div id="profiles-list" class="profiles-list"></div>
+    </div>
+    <div class="settings-section">
+      <div class="section-head">
+        <h3>AI 人设</h3>
+        <button id="btn-save-prompt" class="btn primary">保存</button>
+      </div>
+      <div style="font-size:12px;color:var(--text-soft);margin-bottom:8px;">自定义 System Prompt（附加在四大基金分析框架之上）。留空则只使用默认技能框架。</div>
+      <textarea id="system-prompt-input" rows="5" placeholder="例如：你是一位专业的量化投资分析师，擅长基金组合优化…" style="width:100%;resize:vertical;"></textarea>
+    </div>
+    <div class="settings-section">
+      <h3>数据源</h3>
+      <div style="font-size:12px;color:var(--text-soft);margin-bottom:8px;">基金估值数据来源。fundgz 默认，Sina 备选。</div>
+      <div style="display:flex;gap:12px;font-size:13px;">
+        <label><input type="radio" name="dataSource" value="1" id="ds-fundgz"> fundgz（天天基金）</label>
+        <label><input type="radio" name="dataSource" value="2" id="ds-sina"> Sina（新浪财经）</label>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h3>基金分组</h3>
+      <div style="font-size:12px;color:var(--text-soft);margin-bottom:8px;">创建分组来管理持仓，行情页可按分组筛选。</div>
+      <div id="groups-list-settings"></div>
+      <button id="btn-add-group" class="btn primary" style="margin-top:8px;">+ 新建分组</button>
+    </div>
+    <div class="settings-section">
+      <h3>数据管理</h3>
+      <div class="data-actions">
+        <button id="btn-export" class="btn">导出全部数据</button>
+        <button id="btn-import" class="btn">导入数据</button>
+        <button id="btn-clear-cache" class="btn">清除缓存并更新</button>
+        <button id="btn-clear-all" class="btn danger">清空所有数据</button>
+        <input id="import-file-input" type="file" accept=".json" style="display:none">
+      </div>
+    </div>
+    <div class="settings-section" style="text-align:center;padding-bottom:30px;">
+      <span style="font-size:11px;color:var(--text-soft);">版本 v57 · 2026-06-28</span>
+    </div>
+  </section>
+
+  <!-- 底部 Tab Bar -->
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="chat">
+      <span class="tab-icon">💬</span>
+      <span class="tab-label">聊天</span>
+    </button>
+    <button class="tab-btn" data-tab="overview">
+      <span class="tab-icon">📈</span>
+      <span class="tab-label">行情</span>
+    </button>
+    <button class="tab-btn" data-tab="compare">
+      <span class="tab-icon">🔀</span>
+      <span class="tab-label">对比</span>
+    </button>
+    <button class="tab-btn" data-tab="analysis">
+      <span class="tab-icon">🔬</span>
+      <span class="tab-label">分析</span>
+    </button>
+    <button class="tab-btn" data-tab="holdings">
+      <span class="tab-icon">📊</span>
+      <span class="tab-label">持仓</span>
+    </button>
+    <button class="tab-btn" data-tab="settings">
+      <span class="tab-icon">⚙️</span>
+      <span class="tab-label">设置</span>
+    </button>
+  </nav>
+
+  <!-- 通用模态框容器 -->
+  <div id="modal-root"></div>
+
+  <!-- 强制版本同步 -->
+  <script>
+  (function(){
+    var APP_VERSION = 57;
+    var stored = parseInt(localStorage.getItem('app_version') || '0');
+    if (stored < APP_VERSION) {
+      localStorage.setItem('app_version', APP_VERSION);
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          regs.forEach(function(r) { r.unregister(); });
+          caches.keys().then(function(keys) {
+            Promise.all(keys.map(function(k) { return caches.delete(k); })).then(function() {
+              window.location.reload();
+            });
+          });
+        });
+      } else {
+        window.location.reload();
+      }
+      return;
+    }
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(function(){});
+      navigator.serviceWorker.addEventListener('controllerchange', function() {
+        window.location.reload();
+      });
+    }
+  })();
+  </script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

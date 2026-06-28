@@ -1,0 +1,7 @@
+push_via_api.*
+debug_blob.*
+git_push_api.*
+build_zhengxi_data.py
+.DS_Store
+*.log
+node_modules/
