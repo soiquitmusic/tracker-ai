@@ -27,10 +27,11 @@ export function initAnalysis(containerEl) {
   loadFundDatabase();
   loadManagerDatabase();
 
-  // 搜索按钮弹 modal
+  // 搜索按钮
   if (searchBtn) searchBtn.onclick = () => doSearch();
-  // 点输入框也弹 modal
-  searchInput.addEventListener('click', () => doSearch());
+
+  // 输入实时搜索
+  searchInput.addEventListener('input', () => onSearchInput(searchInput.value));
   searchInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
   });
@@ -70,73 +71,58 @@ export function onAnalysisVisible() {
 
 // 搜索按钮 — 弹搜索 modal（100%可靠，不依赖外部 DOM 定位）
 function doSearch() {
-  const input = document.getElementById('analysis-search-input');
-  const kw = input.value.trim();
+  onSearchInput(document.getElementById('analysis-search-input').value);
+}
 
-  // 收集已有基金供快速选择
-  const fundMap = new Map();
-  (store.getHoldings() || []).forEach(h => { if (h.code) fundMap.set(h.code, h); });
-  (store.getFollowList() || []).forEach(p => (p.items || []).forEach(item => { if (item.code) fundMap.set(item.code, item); }));
-  try { (JSON.parse(localStorage.getItem('analysisHistory')) || []).forEach(h => { if (h.code && !fundMap.has(h.code)) fundMap.set(h.code, h); }); } catch {}
-  const knownFunds = Array.from(fundMap.values()).slice(0, 20);
+function onSearchInput(value) {
+  const kw = (value || '').trim();
+  const resultsEl = document.getElementById('analysis-search-results');
+  const clearBtn = document.getElementById('btn-analysis-search-clear');
+  if (clearBtn) clearBtn.classList.toggle('visible', kw.length > 0);
 
-  const knownHTML = knownFunds.length ? `<div style="font-size:11px;color:var(--text-soft);margin-bottom:4px;">已有基金</div>` + knownFunds.map(f =>
-    `<div class="fund-picker-item" data-code="${esc(f.code)}" data-name="${esc(f.name)}"><span>${esc(f.name||'')}</span><span class="fp-code">${esc(f.code)}</span></div>`
-  ).join('') : '';
+  if (!kw || kw.length < 1) { if (resultsEl) resultsEl.style.display = 'none'; return; }
+  if (!resultsEl) return;
 
-  const modalBody = `
-    <div style="margin-bottom:10px;display:flex;gap:6px;">
-      <input id="modal-search-input" type="text" placeholder="输入基金代码或名称搜索…" value="${esc(kw)}" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;font-size:14px;min-height:44px;" autofocus>
-      <button id="modal-search-btn" class="btn primary" style="padding:8px 14px;font-size:13px;">搜索</button>
-    </div>
-    <div id="modal-search-results" style="max-height:300px;overflow-y:auto;font-size:13px;">${knownHTML || '<div style="color:var(--text-soft);text-align:center;padding:20px;">输入代码或名称搜索基金</div>'}</div>
-  `;
+  // 定位 dropdown 在搜索框下方
+  const wrap = document.querySelector('.analysis-search-wrap');
+  if (wrap) {
+    const rect = wrap.getBoundingClientRect();
+    resultsEl.style.top = (rect.bottom + 4) + 'px';
+    resultsEl.style.left = rect.left + 'px';
+    resultsEl.style.width = rect.width + 'px';
+  }
 
-  showModal('搜索基金', modalBody, [
-    { text: '取消', onClick: (_, c) => c() }
-  ]);
+  resultsEl.innerHTML = '<div class="analysis-search-res-item" style="justify-content:center;padding:12px;color:var(--text-soft);">搜索中…</div>';
+  resultsEl.style.display = '';
 
-  setTimeout(() => {
-    const modalInput = document.getElementById('modal-search-input');
-    const modalResults = document.getElementById('modal-search-results');
-    const modalBtn = document.getElementById('modal-search-btn');
-    if (!modalInput || !modalResults) return;
-
-    const doModalSearch = () => {
-      const v = modalInput.value.trim();
-      if (!v || v.length < 2) return;
-      modalResults.innerHTML = '<div style="text-align:center;color:var(--text-soft);padding:20px;">搜索中…</div>';
-      searchFundMulti(v).then(r => {
-        if (r && r.length > 0) {
-          modalResults.innerHTML = r.slice(0, 20).map(f =>
-            `<div class="fund-picker-item" data-code="${esc(f.code)}" data-name="${esc(f.name)}" style="cursor:pointer;"><span>${esc(f.name||'')} <span style="color:var(--text-soft);font-size:11px;">${esc(f.code)}</span></span><span class="fp-code">${esc(f.type||'').replace(/型$/,'')}</span></div>`
-          ).join('');
-          modalResults.querySelectorAll('.fund-picker-item').forEach(item => {
-            item.onclick = () => {
-              selectFund({ code: item.dataset.code, name: item.dataset.name });
-              const m = document.querySelector('.modal-mask'); if (m) m.remove();
-              document.getElementById('analysis-search-input').value = item.dataset.code;
-            };
-          });
-        } else {
-          modalResults.innerHTML = '<div style="text-align:center;color:var(--text-soft);padding:20px;">未找到，尝试手动输入完整代码</div>';
-        }
-      }).catch(() => {
-        modalResults.innerHTML = '<div style="text-align:center;color:var(--text-soft);padding:20px;">搜索失败，请检查网络</div>';
-      });
-    };
-
-    modalBtn.onclick = doModalSearch;
-    modalInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); doModalSearch(); } });
-    // 已有基金点击
-    modalResults.querySelectorAll('.fund-picker-item').forEach(item => {
+  searchFundMulti(kw).then(results => {
+    if (!results || results.length === 0) {
+      resultsEl.innerHTML = '<div class="analysis-search-res-item" style="justify-content:center;padding:12px;color:var(--text-soft);">未找到匹配基金</div>';
+      return;
+    }
+    resultsEl.innerHTML = results.slice(0, 20).map((r, i) => `
+      <div class="analysis-search-res-item" data-idx="${i}">
+        <div class="res-info">
+          <span class="res-name">${esc(r.name)}</span>
+          <span class="res-meta">
+            <span class="res-code-badge">#${esc(r.code)}</span>
+            ${r.type ? '<span class="res-type">'+esc(r.type.replace(/型$/,''))+'</span>' : ''}
+          </span>
+        </div>
+        <span class="res-arrow">↩</span>
+      </div>
+    `).join('');
+    resultsEl.querySelectorAll('.analysis-search-res-item').forEach(item => {
       item.onclick = () => {
-        selectFund({ code: item.dataset.code, name: item.dataset.name });
-        const m = document.querySelector('.modal-mask'); if (m) m.remove();
-        document.getElementById('analysis-search-input').value = item.dataset.code;
+        selectFund(results[parseInt(item.dataset.idx)]);
+        resultsEl.style.display = 'none';
+        document.getElementById('analysis-search-input').value = '';
+        if (clearBtn) clearBtn.classList.remove('visible');
       };
     });
-  }, 100);
+  }).catch(() => {
+    resultsEl.innerHTML = '<div class="analysis-search-res-item" style="justify-content:center;padding:12px;color:var(--text-soft);">搜索失败</div>';
+  });
 }
 
 // ---------- 持仓选择器 ----------
