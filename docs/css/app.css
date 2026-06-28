@@ -662,12 +662,12 @@ input, textarea, select, button { font-family: inherit; font-size: 14px; }
 }
 .analysis-search-clear.visible { display: block; }
 
-/* 搜索结果下拉 */
+/* 搜索结果下拉 — position:fixed 避免被 overflow 裁掉 */
 .analysis-search-results {
-  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  position: fixed; max-width: 500px;
   background: var(--card); border: 1px solid var(--border);
   border-radius: 12px; max-height: 320px; overflow-y: auto;
-  box-shadow: 0 12px 32px rgba(0,0,0,.12); z-index: 30;
+  box-shadow: 0 12px 32px rgba(0,0,0,.15); z-index: 200;
   padding: 8px;
 }
 .analysis-search-res-item {
