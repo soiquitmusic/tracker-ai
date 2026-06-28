@@ -29,9 +29,7 @@ export function initAnalysis(containerEl) {
   searchInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
   });
-  searchInput.addEventListener('input', debounce(() => {
-    onSearchInput(searchInput.value);
-  }, 200));
+  searchInput.addEventListener('keyup', () => { onSearchInput(searchInput.value); });
 
   clearSearchBtn.onclick = () => {
     searchInput.value = '';
@@ -77,12 +75,14 @@ function onSearchInput(value) {
   const clearBtn = document.getElementById('btn-analysis-search-clear');
   const kw = (value || '').trim();
 
-  clearBtn.classList.toggle('visible', kw.length > 0);
+  if (clearBtn) clearBtn.classList.toggle('visible', kw.length > 0);
 
   if (!kw || kw.length < 1) {
-    resultsEl.style.display = 'none';
+    if (resultsEl) resultsEl.style.display = 'none';
     return;
   }
+
+  if (!resultsEl) return;
 
   // 立刻显示下拉 + 搜索中提示
   resultsEl.innerHTML = '<div class="analysis-search-res-item" style="color:var(--text-soft);justify-content:center;">搜索中…</div>';
