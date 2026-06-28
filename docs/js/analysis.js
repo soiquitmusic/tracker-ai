@@ -27,14 +27,21 @@ export function initAnalysis(containerEl) {
   loadFundDatabase();
   loadManagerDatabase();
 
-  // 搜索按钮
-  if (searchBtn) searchBtn.onclick = () => doSearch();
+  // 搜索按钮（click + touchstart 确保手机触发）
+  if (searchBtn) {
+    searchBtn.addEventListener('click', (e) => { e.preventDefault(); doSearch(); });
+    searchBtn.addEventListener('touchend', (e) => { e.preventDefault(); doSearch(); });
+  }
 
   // 输入搜索
   searchInput.addEventListener('input', () => onSearchInput(searchInput.value));
   searchInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
   });
+
+  // form submit 兜底
+  const form = document.getElementById('analysis-search-form');
+  if (form) form.addEventListener('submit', (e) => { e.preventDefault(); doSearch(); });
 
   // 清除按钮
   if (clearSearchBtn) clearSearchBtn.onclick = () => {
