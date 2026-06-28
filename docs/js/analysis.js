@@ -22,36 +22,33 @@ export function initAnalysis(containerEl) {
   const clearHistoryBtn = document.getElementById('btn-clear-analysis-history');
   const clearSearchBtn = document.getElementById('btn-analysis-search-clear');
   const searchBtn = document.getElementById('btn-analysis-search');
-  if (searchBtn) searchBtn.onclick = () => doSearch();
   const toggleHistory = document.getElementById('toggle-analysis-history');
 
   loadFundDatabase();
   loadManagerDatabase();
 
+  // 搜索按钮
+  if (searchBtn) searchBtn.onclick = () => doSearch();
+
+  // 输入实时搜索
+  searchInput.addEventListener('input', () => onSearchInput(searchInput.value));
   searchInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
   });
-  searchInput.addEventListener('keyup', () => { onSearchInput(searchInput.value); });
 
-  clearSearchBtn.onclick = () => {
+  // 清除按钮
+  if (clearSearchBtn) clearSearchBtn.onclick = () => {
     searchInput.value = '';
-    clearSearchBtn.classList.remove('visible');
-    resultsEl.style.display = 'none';
+    if (clearSearchBtn) clearSearchBtn.classList.remove('visible');
+    if (resultsEl) resultsEl.style.display = 'none';
     searchInput.focus();
   };
-
-  document.addEventListener('click', e => {
-    if (!resultsEl.contains(e.target) && e.target !== searchInput) {
-      resultsEl.style.display = 'none';
-    }
-  });
 
   startBtn.onclick = () => startAnalysis();
   pickBtn.onclick = () => openHoldingsPicker();
   clearSelBtn.onclick = () => clearSelection();
   clearHistoryBtn.onclick = () => clearHistory();
 
-  // 折叠历史
   if (toggleHistory) {
     toggleHistory.onclick = (e) => {
       if (e.target.closest('button')) return;
@@ -72,40 +69,28 @@ export function onAnalysisVisible() {
 
 // ---------- 基金搜索 ----------
 
+let lastSearchId = 0;
 function onSearchInput(value) {
   const resultsEl = document.getElementById('analysis-search-results');
   const clearBtn = document.getElementById('btn-analysis-search-clear');
   const kw = (value || '').trim();
-
   if (clearBtn) clearBtn.classList.toggle('visible', kw.length > 0);
 
-  if (!kw || kw.length < 1) {
-    if (resultsEl) resultsEl.style.display = 'none';
-    return;
-  }
-
+  if (!kw || kw.length < 1) { if (resultsEl) resultsEl.style.display = 'none'; return; }
   if (!resultsEl) return;
 
-  // 立刻显示下拉 + 搜索中提示
-  resultsEl.innerHTML = '<div class="analysis-search-res-item" style="color:var(--text-soft);justify-content:center;">搜索中…</div>';
+  // 显示搜索中
+  const sid = ++lastSearchId;
+  resultsEl.innerHTML = '<div class="analysis-search-res-item" style="justify-content:center;color:var(--text-soft);">搜索中…</div>';
   resultsEl.style.display = '';
 
-  // 本地数据库优先（毫秒级响应）
-  const localResults = searchFundLocal(kw);
-  if (localResults.length > 0) {
-    renderSearchResults(localResults.slice(0, 15));
-    return;
-  }
+  // 本地优先
+  const local = searchFundLocal(kw);
+  if (local.length > 0 && sid === lastSearchId) { renderSearchResults(local.slice(0, 15)); return; }
 
-  // 本地无结果 → 网络搜索
-  if (/^\d{6}$/.test(kw)) {
-    searchFund(kw).then(fund => {
-      if (fund) renderSearchResults([{ code: fund.code, name: fund.name }]);
-      else searchFundMulti(kw).then(r => renderSearchResults(r));
-    });
-  } else {
-    searchFundMulti(kw).then(results => renderSearchResults(results));
-  }
+  // 网络搜索（6位代码直接查fundgz，否则用EastMoney）
+  const promise = /^\d{6}$/.test(kw) ? searchFund(kw).then(f => f ? [{code:f.code,name:f.name}] : searchFundMulti(kw)) : searchFundMulti(kw);
+  promise.then(results => { if (sid === lastSearchId) renderSearchResults(results || []); });
 }
 
 function doSearch() {
