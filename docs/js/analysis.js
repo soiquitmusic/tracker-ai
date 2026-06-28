@@ -30,7 +30,7 @@ export function initAnalysis(containerEl) {
   // 搜索按钮
   if (searchBtn) searchBtn.onclick = () => doSearch();
 
-  // 输入实时搜索
+  // 输入搜索
   searchInput.addEventListener('input', () => onSearchInput(searchInput.value));
   searchInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
@@ -94,7 +94,21 @@ function onSearchInput(value) {
 }
 
 function doSearch() {
-  onSearchInput(document.getElementById('analysis-search-input').value);
+  const input = document.getElementById('analysis-search-input');
+  const kw = input.value.trim();
+  if (!kw) { toast('请输入基金代码或名称'); input.focus(); return; }
+
+  const resultsEl = document.getElementById('analysis-search-results');
+  resultsEl.innerHTML = '<div class="analysis-search-res-item" style="justify-content:center;color:var(--text-soft);">搜索中…</div>';
+  resultsEl.style.display = '';
+
+  // 先试本地
+  const local = searchFundLocal(kw);
+  if (local.length > 0) { renderSearchResults(local.slice(0, 20)); return; }
+
+  // 再用网络
+  const p = /^\d{6}$/.test(kw) ? searchFund(kw).then(f => f ? [f] : searchFundMulti(kw)) : searchFundMulti(kw);
+  p.then(r => { renderSearchResults(r || []); });
 }
 
 function renderSearchResults(results) {

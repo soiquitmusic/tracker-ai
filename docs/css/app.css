@@ -634,7 +634,7 @@ input, textarea, select, button { font-family: inherit; font-size: 14px; }
 /* 顶部：搜索+选择+按钮 */
 .analysis-top-bar {
   display: flex; align-items: center; gap: 6px;
-  padding: 12px 10px 0; flex-wrap: wrap;
+  padding: 10px 8px 0;
 }
 .analysis-search-wrap {
   position: relative; flex: 1; min-width: 140px;
@@ -1026,8 +1026,10 @@ input, textarea, select, button { font-family: inherit; font-size: 14px; }
   .cmp-select { font-size: 11px; padding: 3px; max-width: 90px; }
   .cmp-vs { font-size: 11px; }
 
-  /* 分析页 - 搜索区已经在 analysis-top-bar 里响应了 */
-  .analysis-search-input { font-size: 13px; }
+  /* 分析页 */
+  .analysis-top-bar { padding: 8px 6px 0; gap: 4px; flex-wrap: wrap; }
+  .analysis-search-wrap { min-width: 100px; flex: 1; }
+  .analysis-search-input { font-size: 13px; padding: 7px 2px; }
   .analysis-search-res-item { padding: 10px 12px; }
   .analysis-search-res-item .res-name { font-size: 13px; }
   .analysis-fund-hero { padding: 10px; }
