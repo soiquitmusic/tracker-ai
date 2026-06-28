@@ -96,56 +96,17 @@ function onSearchInput(value) {
 function doSearch() {
   const input = document.getElementById('analysis-search-input');
   const kw = input.value.trim();
+  if (!kw) { toast('请输入基金代码或名称'); input.focus(); return; }
 
-  // 收集所有可用基金（持仓 + 关注 + 分析历史）
-  const allFunds = new Map();
-  const holdings = store.getHoldings() || [];
-  holdings.forEach(h => { if (h.code) allFunds.set(h.code, { code: h.code, name: h.name || '' }); });
-  const fl = store.getFollowList() || [];
-  fl.forEach(p => (p.items || []).forEach(item => { if (item.code) allFunds.set(item.code, { code: item.code, name: item.name || '' }); }));
-  try { (JSON.parse(localStorage.getItem('analysisHistory')) || []).forEach(h => { if (h.code && !allFunds.has(h.code)) allFunds.set(h.code, { code: h.code, name: h.name || '' }); }); } catch {}
+  const resultsEl = document.getElementById('analysis-search-results');
+  resultsEl.innerHTML = '<div class="analysis-search-res-item" style="justify-content:center;color:var(--text-soft);">搜索中…</div>';
+  resultsEl.style.display = '';
 
-  let funds = Array.from(allFunds.values());
-
-  // 如果有输入，筛选
-  if (kw) {
-    const lk = kw.toLowerCase();
-    funds = funds.filter(f => f.code.includes(kw) || (f.name || '').toLowerCase().includes(lk));
-  }
-
-  // 如果输入了代码且本地没找到，加一个占位
-  if (kw && /^\d{6}$/.test(kw) && !funds.find(f => f.code === kw)) {
-    funds.unshift({ code: kw, name: kw + '（暂未匹配，可手动填入）' });
-  }
-
-  // 如果有持仓或搜索匹配到了 → 弹出选择器
-  if (funds.length > 0) {
-    const listHTML = funds.slice(0, 50).map(f =>
-      `<div class="fund-picker-item" data-code="${esc(f.code)}" data-name="${esc(f.name)}">
-        <span>${esc(f.name || '')}</span>
-        <span class="fp-code">${esc(f.code)}</span>
-      </div>`
-    ).join('');
-
-    showModal('选择基金', `<div class="fund-picker-list">${listHTML}</div>`, [
-      { text: '取消', onClick: (_, c) => c() }
-    ]);
-
-    setTimeout(() => {
-      document.querySelectorAll('.fund-picker-item').forEach(item => {
-        item.onclick = () => {
-          selectFund({ code: item.dataset.code, name: item.dataset.name });
-          const mask = document.querySelector('.modal-mask');
-          if (mask) mask.remove();
-        };
-      });
-    }, 50);
-    return;
-  }
-
-  // 完全无数据 → 提示
-  toast('尚未添加任何持仓，请在持仓页添加基金');
-  input.focus();
+  // 直接用 East Money JSONP 搜索（和 real-time-fund 完全一样）
+  searchFundMulti(kw).then(results => {
+    if (results && results.length > 0) { renderSearchResults(results); }
+    else { renderSearchResults([]); }
+  }).catch(() => { renderSearchResults([]); });
 }
 
 function renderSearchResults(results) {
