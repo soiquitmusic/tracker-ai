@@ -5,13 +5,6 @@ import { toast, showModal, detectSectorFromHoldings } from './utils.js';
 let refreshTimer = null, lastUpdateTime = null, fundRows = [], isRefreshing = false;
 let currentGroupId = 'all', currentFilter = '全部';
 
-const BUILTIN_FILTERS = {
-  '半导体': ['半导体','芯片','集成电路'],
-  'AI/科技': ['人工智能','AI','科技','信息','互联网','数字'],
-  'QDII': ['QDII','qdii','海外','全球','纳斯达克','标普','恒生','港股'],
-  '黄金': ['黄金','有色','贵金属','金属'],
-};
-
 const ALL_COLUMNS = [
   { key:'name', label:'基金名称', visible:true, fixed:true },
   { key:'sector', label:'关联板块', visible:true },
@@ -91,7 +84,7 @@ async function fetchValuation(code){
 function renderFilterBar(){
   const el=document.getElementById('overview-filters'); if(!el)return;
   const groups=store.getGroups(); const custom=getCustomFilters();
-  const cats=['全部',...Object.keys(BUILTIN_FILTERS),...custom.map(f=>f.name),'其他'];
+  const cats=['全部',...custom.map(f=>f.name)];
   let h='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">';
   if(groups.length){ h+='<span style="font-size:10px;color:var(--text-soft);">分组</span>';
     [{id:'all',name:'全部'},...groups].forEach(g=>h+=`<button class="ov-filter-btn ${g.id===currentGroupId?'active':''}" data-gid="${g.id}">${esc(g.name)}</button>`);
@@ -109,14 +102,13 @@ function renderFilterBar(){
 function openAddFilter(){
   showModal('新增分类','<div class="form-group"><label>名称</label><input id="fn" placeholder="如:医药"></div><div class="form-group"><label>关键词(逗号分隔)</label><input id="fk" placeholder="如:医药,医疗,生物"></div>',[
     {text:'取消',onClick:(_,c)=>c()},
-    {text:'添加',cls:'primary',onClick:(m,c)=>{ const n=m.querySelector('#fn').value.trim(),k=m.querySelector('#fk').value.trim(); if(!n||!k){toast('名称和关键词必填');return;} const kw=k.split(/[,，]/).map(s=>s.trim()).filter(Boolean); const l=getCustomFilters(); if(l.some(f=>f.name===n)||BUILTIN_FILTERS[n]){toast('名称已存在');return;} l.push({name:n,keywords:kw}); saveCustomFilters(l); currentFilter=n; renderFilterBar();renderTable(); c(); }}
+    {text:'添加',cls:'primary',onClick:(m,c)=>{ const n=m.querySelector('#fn').value.trim(),k=m.querySelector('#fk').value.trim(); if(!n||!k){toast('名称和关键词必填');return;} const kw=k.split(/[,，]/).map(s=>s.trim()).filter(Boolean); const l=getCustomFilters(); if(l.some(f=>f.name===n)){toast('名称已存在');return;} l.push({name:n,keywords:kw}); saveCustomFilters(l); currentFilter=n; renderFilterBar();renderTable(); c(); }}
   ]);
 }
 
 function matchFilter(f,fn){
   if(fn==='全部')return true;
-  const af={...BUILTIN_FILTERS,...Object.fromEntries(getCustomFilters().map(f=>[f.name,f.keywords]))};
-  if(fn==='其他'){ const ak=Object.values(af).flat(); return !ak.some(k=>f.name&&f.name.includes(k)); }
+  const af=Object.fromEntries(getCustomFilters().map(f=>[f.name,f.keywords]));
   return (af[fn]||[]).some(k=>f.name&&f.name.includes(k));
 }
 
@@ -159,7 +151,7 @@ async function refreshAll(silent){
     }
     fundRows=rows;
     const tmv=tc+tp,tr=tc>0?(tp/tc*100):0;
-    document.getElementById('overview-summary').innerHTML=`<div class="ov-summary-grid"><div class="ov-summary-item"><div class="ov-summary-label">总市值</div><div class="ov-summary-val">¥${tmv.toFixed(0)}</div></div><div class="ov-summary-item"><div class="ov-summary-label">持仓收益</div><div class="ov-summary-val ${tp>=0?'profit-pos':'profit-neg'}">${tp>=0?'+':''}¥${tp.toFixed(0)}<small>(${tr>=0?'+':''}${tr.toFixed(2)}%)</small></div></div><div class="ov-summary-item"><div class="ov-summary-label">今日收益</div><div class="ov-summary-val ${tt>=0?'profit-pos':'profit-neg'}">${tt>=0?'+':''}¥${tt.toFixed(2)}</div></div><div class="ov-summary-item"><div class="ov-summary-label">总成本</div><div class="ov-summary-val">¥${tc.toFixed(0)}</div></div></div>`;
+    document.getElementById('overview-summary').innerHTML=`<div class="ov-summary-bar"><span>市值 <b>¥${tmv.toFixed(0)}</b></span><span>收益 <b class="${tp>=0?'profit-pos':'profit-neg'}">${tp>=0?'+':''}¥${tp.toFixed(0)}</b> <small>${tr>=0?'+':''}${tr.toFixed(2)}%</small></span><span>今日 <b class="${tt>=0?'profit-pos':'profit-neg'}">${tt>=0?'+':''}¥${tt.toFixed(2)}</b></span><span>成本 <b>¥${tc.toFixed(0)}</b></span></div>`;
     renderTable();
     lastUpdateTime=new Date(); if(te)te.textContent=`${lastUpdateTime.getHours().toString().padStart(2,'0')}:${lastUpdateTime.getMinutes().toString().padStart(2,'0')} 更新`;
     if(isTradeTime()&&!refreshTimer)startAutoRefresh();

@@ -310,17 +310,16 @@ input, textarea, select, button { font-family: inherit; font-size: 14px; }
 }
 .ov-sort-btn.desc::after { content: ' ↓'; }
 .ov-sort-btn.asc::after { content: ' ↑'; }
-/* 汇总网格 */
-.ov-summary-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 12px;
+/* 汇总单行 */
+.ov-summary-bar {
+  display: flex; justify-content: space-around; align-items: center;
+  padding: 8px 10px; margin: 0 8px; background: var(--card);
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: 12px; gap: 4px; flex-wrap: wrap;
 }
-.ov-summary-item {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 8px 10px; text-align: center;
-}
-.ov-summary-label { font-size: 11px; color: var(--text-soft); }
-.ov-summary-val { font-size: 16px; font-weight: 700; margin-top: 2px; }
-.ov-summary-val small { font-size: 11px; font-weight: 400; color: var(--text-soft); }
+.ov-summary-bar span { white-space: nowrap; color: var(--text-soft); }
+.ov-summary-bar b { font-size: 13px; color: var(--text); }
+.ov-summary-bar small { font-size: 10px; font-weight: 400; color: var(--text-soft); }
 .ov-time { font-size: 11px; color: var(--text-soft); }
 
 /* 横向滚动表格（参考 real-time-fund 样式） */
