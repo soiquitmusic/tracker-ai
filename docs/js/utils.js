@@ -468,53 +468,40 @@ export function detectSectorFromHoldings(topHoldings) {
   return sectors;
 }
 
-// 按关键词搜索基金（返回多条结果，上限20条，本地优先）
-export function searchFundMulti(keyword) {
-  const kw = String(keyword || '').trim();
+// 按关键词搜索基金（直接抄 real-time-fund 的 searchFunds）
+export function searchFundMulti(val) {
+  const kw = String(val || '').trim();
   if (!kw) return Promise.resolve([]);
 
-  // 优先从本地数据库搜索
-  const localResults = searchFundLocal(kw);
-  if (localResults.length > 0) {
-    return Promise.resolve(localResults.slice(0, 20));
-  }
-
-  // 网络搜索
   return new Promise((resolve) => {
-    const timeout = setTimeout(() => { cleanup(); resolve([]); }, 8000);
-    const cbName = '_fundSearchM_' + Date.now();
-
-    function cleanup() {
-      clearTimeout(timeout);
+    const cbName = 'SuggestData_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+    const url = 'https://fundsuggest.eastmoney.com/FundSearch/api/FundSearchAPI.ashx?m=1&key=' + encodeURIComponent(kw) + '&callback=' + cbName + '&_=' + Date.now();
+    let done = false;
+    const timer = setTimeout(() => {
+      if (done) return;
+      done = true;
+      if (document.body.contains(script)) script.remove();
       delete window[cbName];
-      const s = document.getElementById(cbName);
-      if (s) s.remove();
-    }
+      resolve([]);
+    }, 10000);
 
     window[cbName] = (data) => {
-      cleanup();
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      delete window[cbName];
+      if (document.body.contains(script)) script.remove();
       try {
         if (data && data.Datas && data.Datas.length > 0) {
-          // 过滤只保留基金类（CATEGORY===700）
-          const funds = data.Datas
-            .filter(d => d.CATEGORY === 700 || d.CATEGORY === '700' || d.CATEGORYDESC === '基金')
-            .slice(0, 20)
-            .map(d => ({
-              code: d.CODE,
-              name: d.NAME,
-              type: d.FundType || '',
-            }));
-          resolve(funds);
-        } else {
-          resolve([]);
-        }
+          resolve(data.Datas.filter(d => d.CATEGORY === 700 || d.CATEGORY === '700' || d.CATEGORYDESC === '基金').slice(0, 20).map(d => ({ code: d.CODE, name: d.NAME, type: d.FundType || '' })));
+        } else { resolve([]); }
       } catch { resolve([]); }
     };
 
     const script = document.createElement('script');
-    script.id = cbName;
-    script.src = `https://fundsuggest.eastmoney.com/FundSearch/api/FundSearchAPI.ashx?callback=${cbName}&m=1&key=${encodeURIComponent(kw)}`;
-    script.onerror = () => { cleanup(); resolve([]); };
-    document.head.appendChild(script);
+    script.src = url;
+    script.async = true;
+    script.onerror = () => { if (!done) { done = true; clearTimeout(timer); delete window[cbName]; script.remove(); resolve([]); } };
+    document.body.appendChild(script);
   });
 }

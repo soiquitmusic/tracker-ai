@@ -96,23 +96,24 @@ function onSearchInput(value) {
 function doSearch() {
   const input = document.getElementById('analysis-search-input');
   const kw = input.value.trim();
+  if (!kw) { openHoldingsPicker(); return; }
 
-  // 有输入 → 尝试搜索（本地+网络）
-  if (kw.length >= 2) {
-    const resultsEl = document.getElementById('analysis-search-results');
-    resultsEl.innerHTML = '<div class="analysis-search-res-item" style="justify-content:center;color:var(--text-soft);">搜索中…</div>';
-    resultsEl.style.display = '';
+  const resultsEl = document.getElementById('analysis-search-results');
+  resultsEl.innerHTML = '<div class="analysis-search-res-item" style="justify-content:center;color:var(--text-soft);">搜索中…</div>';
+  resultsEl.style.display = '';
 
-    const local = searchFundLocal(kw);
-    if (local.length > 0) { renderSearchResults(local.slice(0, 20)); return; }
-
-    const p = /^\d{6}$/.test(kw) ? searchFund(kw).then(f => f ? [f] : searchFundMulti(kw)) : searchFundMulti(kw);
-    p.then(r => { renderSearchResults(r && r.length > 0 ? r : [{code:kw, name:kw+' (未查到名称，可手动填写)'}]); });
-    return;
-  }
-
-  // 无输入或输入过短 → 弹出持仓选择（100%本地，不依赖网络）
-  openHoldingsPicker();
+  searchFundMulti(kw).then(results => {
+    if (results && results.length > 0) { renderSearchResults(results); return; }
+    // 6位代码没搜到，试试 fundgz
+    if (/^\d{6}$/.test(kw)) {
+      searchFund(kw).then(f => {
+        if (f) renderSearchResults([f]);
+        else renderSearchResults([]);
+      });
+    } else {
+      renderSearchResults([]);
+    }
+  });
 }
 
 function renderSearchResults(results) {
