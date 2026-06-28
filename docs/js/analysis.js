@@ -27,21 +27,14 @@ export function initAnalysis(containerEl) {
   loadFundDatabase();
   loadManagerDatabase();
 
-  // 搜索按钮（click + touchstart 确保手机触发）
-  if (searchBtn) {
-    searchBtn.addEventListener('click', (e) => { e.preventDefault(); doSearch(); });
-    searchBtn.addEventListener('touchend', (e) => { e.preventDefault(); doSearch(); });
-  }
+  // 搜索按钮
+  if (searchBtn) searchBtn.onclick = () => doSearch();
 
   // 输入搜索
   searchInput.addEventListener('input', () => onSearchInput(searchInput.value));
   searchInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
   });
-
-  // form submit 兜底
-  const form = document.getElementById('analysis-search-form');
-  if (form) form.addEventListener('submit', (e) => { e.preventDefault(); doSearch(); });
 
   // 清除按钮
   if (clearSearchBtn) clearSearchBtn.onclick = () => {
@@ -76,44 +69,58 @@ export function onAnalysisVisible() {
 
 // ---------- 基金搜索 ----------
 
-let lastSearchId = 0;
-function onSearchInput(value) {
+let searchTimer = null;
+let lastSearched = '';
+
+// 核心搜索（和 real-time-fund useEffect + searchFunds 一样）
+function triggerSearch(kw) {
   const resultsEl = document.getElementById('analysis-search-results');
-  const clearBtn = document.getElementById('btn-analysis-search-clear');
-  const kw = (value || '').trim();
-  if (clearBtn) clearBtn.classList.toggle('visible', kw.length > 0);
-
-  if (!kw || kw.length < 1) { if (resultsEl) resultsEl.style.display = 'none'; return; }
   if (!resultsEl) return;
+  if (!kw || kw.length < 2) { resultsEl.innerHTML = ''; return; }
 
-  // 显示搜索中
-  const sid = ++lastSearchId;
-  resultsEl.innerHTML = '<div class="analysis-search-res-item" style="justify-content:center;color:var(--text-soft);">搜索中…</div>';
-  resultsEl.style.display = '';
+  // 防抖重复搜索
+  if (kw === lastSearched) return;
+  lastSearched = kw;
+  clearTimeout(searchTimer);
 
-  // 本地优先
-  const local = searchFundLocal(kw);
-  if (local.length > 0 && sid === lastSearchId) { renderSearchResults(local.slice(0, 15)); return; }
+  searchTimer = setTimeout(() => {
+    // 忽略过时的搜索
+    if (document.getElementById('analysis-search-input').value.trim() !== kw) return;
 
-  // 网络搜索（6位代码直接查fundgz，否则用EastMoney）
-  const promise = /^\d{6}$/.test(kw) ? searchFund(kw).then(f => f ? [{code:f.code,name:f.name}] : searchFundMulti(kw)) : searchFundMulti(kw);
-  promise.then(results => { if (sid === lastSearchId) renderSearchResults(results || []); });
+    resultsEl.innerHTML = '<div class="analysis-search-res-item" style="justify-content:center;color:var(--text-soft);">搜索中…</div>';
+    resultsEl.style.display = '';
+
+    searchFundMulti(kw).then(results => {
+      if (document.getElementById('analysis-search-input').value.trim() === kw) {
+        renderSearchResults(results || []);
+      }
+    }).catch(() => {
+      if (document.getElementById('analysis-search-input').value.trim() === kw) {
+        renderSearchResults([]);
+      }
+    });
+  }, 300);
 }
 
+// 输入框事件（抄 real-time-fund onChange + useEffect）
+function onSearchInput(value) {
+  const kw = (value || '').trim();
+  const clearBtn = document.getElementById('btn-analysis-search-clear');
+  const resultsEl = document.getElementById('analysis-search-results');
+  if (clearBtn) clearBtn.classList.toggle('visible', kw.length > 0);
+
+  if (!kw) { if (resultsEl) { resultsEl.innerHTML = ''; resultsEl.style.display = 'none'; } lastSearched = ''; return; }
+  if (resultsEl) resultsEl.style.display = '';
+  triggerSearch(kw);
+}
+
+// 搜索按钮
 function doSearch() {
   const input = document.getElementById('analysis-search-input');
   const kw = input.value.trim();
   if (!kw) { toast('请输入基金代码或名称'); input.focus(); return; }
-
-  const resultsEl = document.getElementById('analysis-search-results');
-  resultsEl.innerHTML = '<div class="analysis-search-res-item" style="justify-content:center;color:var(--text-soft);">搜索中…</div>';
-  resultsEl.style.display = '';
-
-  // 直接用 East Money JSONP 搜索（和 real-time-fund 完全一样）
-  searchFundMulti(kw).then(results => {
-    if (results && results.length > 0) { renderSearchResults(results); }
-    else { renderSearchResults([]); }
-  }).catch(() => { renderSearchResults([]); });
+  lastSearched = ''; // 强制搜索
+  triggerSearch(kw);
 }
 
 function renderSearchResults(results) {

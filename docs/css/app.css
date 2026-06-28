@@ -653,7 +653,7 @@ input, textarea, select, button { font-family: inherit; font-size: 14px; }
 .analysis-search-input {
   flex: 1; padding: 9px 4px; border: none; outline: none;
   font-size: 14px; background: transparent; color: var(--text);
-  min-width: 60px;
+  min-width: 60px; min-height: 44px;
 }
 .analysis-search-input::placeholder { color: #94a3b8; font-size: 13px; }
 .analysis-search-clear {
@@ -1029,7 +1029,7 @@ input, textarea, select, button { font-family: inherit; font-size: 14px; }
   /* 分析页 */
   .analysis-top-bar { padding: 8px 6px 0; gap: 4px; flex-wrap: wrap; }
   .analysis-search-wrap { min-width: 100px; flex: 1; }
-  .analysis-search-input { font-size: 13px; padding: 7px 2px; }
+  .analysis-search-input { font-size: 16px; padding: 7px 2px; /* 16px 防 iOS 自动放大 */ }
   .analysis-search-res-item { padding: 10px 12px; }
   .analysis-search-res-item .res-name { font-size: 13px; }
   .analysis-fund-hero { padding: 10px; }

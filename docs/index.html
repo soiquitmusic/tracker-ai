@@ -111,8 +111,7 @@
     <div class="page-header">
       <h2>分析</h2>
     </div>
-    <!-- 搜索区 — 用 form 包裹，手机可靠 -->
-    <form class="analysis-top-bar" id="analysis-search-form" onsubmit="return false">
+    <div class="analysis-top-bar">
       <div class="analysis-search-wrap">
         <span class="analysis-search-icon">🔍</span>
         <input id="analysis-search-input" type="text" placeholder="搜索基金名称或代码…" class="analysis-search-input" autocomplete="off">
@@ -120,11 +119,10 @@
         <div id="analysis-search-results" class="analysis-search-results" style="display:none;"></div>
       </div>
       <button id="btn-analysis-search" class="btn primary" type="button"
-        style="font-size:13px;padding:8px 14px;white-space:nowrap;flex-shrink:0;min-width:44px;min-height:44px;"
-        onclick="alert('搜索按钮被点击了！输入内容：'+document.getElementById('analysis-search-input').value)">搜索</button>
+        style="font-size:13px;padding:8px 14px;white-space:nowrap;flex-shrink:0;min-width:44px;min-height:44px;">搜索</button>
       <span class="analysis-shortcut-chip" id="btn-pick-holdings">📋</span>
       <button id="btn-analysis-start" class="btn primary" disabled type="button" style="font-size:12px;padding:6px 10px;white-space:nowrap;">分析</button>
-    </form>
+    </div>
     <!-- 选中基金 -->
     <div id="analysis-selected-card" class="analysis-selected-card" style="display:none;">
       <span class="sel-name"></span>
@@ -192,7 +190,7 @@
       </div>
     </div>
     <div class="settings-section" style="text-align:center;padding-bottom:30px;">
-      <span style="font-size:11px;color:var(--text-soft);">版本 v63 · 2026-06-29</span>
+      <span style="font-size:11px;color:var(--text-soft);">版本 v65 · 2026-06-29</span>
     </div>
   </section>
 
@@ -230,7 +228,7 @@
   <!-- 强制版本同步 -->
   <script>
   (function(){
-    var APP_VERSION = 63;
+    var APP_VERSION = 65;
     var stored = parseInt(localStorage.getItem('app_version') || '0');
     if (stored < APP_VERSION) {
       localStorage.setItem('app_version', APP_VERSION);
