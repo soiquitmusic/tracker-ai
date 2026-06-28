@@ -1,6 +1,6 @@
 // ===== overview.js - 行情总览（横向滚动表格） =====
 import * as store from './store.js';
-import { toast, showModal, detectSectorFromHoldings } from './utils.js';
+import { toast, showModal, detectSectorFromHoldings, fetchWithDispatcher } from './utils.js';
 
 let refreshTimer = null, lastUpdateTime = null, fundRows = [], isRefreshing = false;
 let currentGroupId = 'all', currentFilter = '全部';
@@ -56,19 +56,8 @@ async function fetchJ5Quick(code){
   }catch{ return null; }
 }
 
-let gzQ=Promise.resolve();
 function fetchGz(code){
-  return new Promise(resolve=>{
-    gzQ=gzQ.then(()=>new Promise(done=>{
-      const id='_ov_'+code; let settled=false;
-      const finish=v=>{if(settled)return;settled=true;clearTimeout(tmr);const s=document.getElementById(id);if(s)s.remove();done();resolve(v);};
-      const tmr=setTimeout(()=>finish(null),4000);
-      window.jsonpgz=data=>finish(data||null);
-      const s=document.createElement('script');s.id=id;
-      s.src='https://fundgz.1234567.com.cn/js/'+code+'.js?rt='+Date.now();
-      s.onerror=()=>finish(null); document.head.appendChild(s);
-    }));
-  });
+  return fetchWithDispatcher(code, 5000);
 }
 
 async function fetchValuation(code){

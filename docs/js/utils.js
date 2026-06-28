@@ -124,6 +124,66 @@ export function showModal(title, bodyHTML, footerBtns = []) {
   return { modal, close };
 }
 
+// ===== fundgz JSONP 调度器（解决 window.jsonpgz 全局冲突） =====
+
+let _jsonpgzDispatcher = null;
+
+function ensureJsonpgzDispatcher() {
+  if (_jsonpgzDispatcher) return _jsonpgzDispatcher;
+  const pending = new Map();
+
+  window.jsonpgz = (json) => {
+    if (!json || !json.fundcode) return;
+    const code = String(json.fundcode).trim();
+    const entry = pending.get(code);
+    if (entry) {
+      pending.delete(code);
+      if (entry.cleanup) entry.cleanup();
+      if (entry.onData) entry.onData(json);
+    }
+  };
+
+  _jsonpgzDispatcher = {
+    register(code, { onData, cleanup, timeout }) {
+      if (pending.has(code)) {
+        const old = pending.get(code);
+        if (old.cleanup) old.cleanup();
+      }
+      pending.set(code, { onData, cleanup });
+      if (timeout) setTimeout(() => {
+        const e = pending.get(code);
+        if (e === pending.get(code)) pending.delete(code);
+      }, timeout);
+    },
+    unregister(code) { pending.delete(code); },
+  };
+  return _jsonpgzDispatcher;
+}
+
+export function fetchWithDispatcher(code, timeoutMs = 5000) {
+  return new Promise((resolve) => {
+    const dispatcher = ensureJsonpgzDispatcher();
+    let settled = false;
+    const finish = (v) => { if (settled) return; settled = true; resolve(v || null); };
+    const timer = setTimeout(() => finish(null), timeoutMs);
+    const id = '_fd_' + code;
+
+    dispatcher.register(code, {
+      onData: (data) => {
+        finish(data);
+      },
+      cleanup: () => { clearTimeout(timer); const s = document.getElementById(id); if (s) s.remove(); },
+      timeout: timeoutMs,
+    });
+
+    const script = document.createElement('script');
+    script.id = id;
+    script.src = `https://fundgz.1234567.com.cn/js/${code}.js?rt=${Date.now()}`;
+    script.onerror = () => finish(null);
+    document.head.appendChild(script);
+  });
+}
+
 export function debounce(fn, ms) {
   let t;
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
@@ -249,43 +309,22 @@ export function searchFundLocal(keyword) {
   return results;
 }
 
-// 基金代码搜索名称（天天基金 JSONP + 本地DB fallback）
+// 基金代码搜索名称（通过调度器 + 本地DB fallback）
 export function searchFund(code) {
   return new Promise((resolve) => {
-    // 先从本地数据库查找
     const db = fundDB;
     if (db && db.has(String(code).trim())) {
       const f = db.get(String(code).trim());
       resolve({ code: String(code).trim(), name: f.name });
       return;
     }
-
-    const cbName = '_fundCb_' + Date.now();
-    const timeout = setTimeout(() => { cleanup(); resolve(null); }, 3000);
-
-    function cleanup() {
-      clearTimeout(timeout);
-      delete window[cbName];
-      const s = document.getElementById(cbName);
-      if (s) s.remove();
-    }
-
-    window[cbName] = (data) => {
-      cleanup();
-      if (data && data.name) {
-        resolve({ code: data.fundcode || code, name: data.name });
-      } else {
-        resolve(null);
-      }
-    };
-
-    window.jsonpgz = (data) => { window[cbName](data); };
-
-    const script = document.createElement('script');
-    script.id = cbName;
-    script.src = `https://fundgz.1234567.com.cn/js/${encodeURIComponent(code)}.js`;
-    script.onerror = () => { cleanup(); resolve(null); };
-    document.head.appendChild(script);
+    fetchWithDispatcher(code, 4000).then(data => {
+      if (data && data.name) resolve({ code: String(data.fundcode || code).trim(), name: data.name });
+      else searchFundMulti(code).then(r => {
+        const found = r.find(f => f.code === code);
+        resolve(found || null);
+      });
+    });
   });
 }
 

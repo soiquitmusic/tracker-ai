@@ -1,6 +1,6 @@
 // ===== compare.js - 持仓对比（横向滚动表格） =====
 import * as store from './store.js';
-import { toast, showModal } from './utils.js';
+import { toast, showModal, fetchWithDispatcher } from './utils.js';
 
 let isRefreshing = false, cachedFundData = {};
 let currentFilter = '全部', currentTypeFilter = '全部';
@@ -70,19 +70,8 @@ function matchFilter(f,fn){
 }
 
 // 估值获取
-let gzQ=Promise.resolve();
 function fetchGz(code){
-  return new Promise(resolve=>{
-    gzQ=gzQ.then(()=>new Promise(done=>{
-      const id='_cp_'+code; let settled=false;
-      const finish=v=>{if(settled)return;settled=true;clearTimeout(tmr);const s=document.getElementById(id);if(s)s.remove();done();resolve(v);};
-      const tmr=setTimeout(()=>finish(null),4000);
-      window.jsonpgz=data=>finish(data||null);
-      const s=document.createElement('script');s.id=id;
-      s.src='https://fundgz.1234567.com.cn/js/'+code+'.js?rt='+Date.now();
-      s.onerror=()=>finish(null); document.head.appendChild(s);
-    }));
-  });
+  return fetchWithDispatcher(code, 5000);
 }
 
 async function refreshCompare(){

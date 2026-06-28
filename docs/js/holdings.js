@@ -2,7 +2,7 @@
 
 import * as store from './store.js';
 import { PRESETS, streamChat } from './providers.js';
-import { fileToBase64, compressImage, extractJSON, toast, showModal, searchFund, searchFundByKeyword, getDataSource } from './utils.js';
+import { fileToBase64, compressImage, extractJSON, toast, showModal, searchFund, searchFundByKeyword, getDataSource, fetchWithDispatcher } from './utils.js';
 
 let holdingSortState = 'none'; // none → desc → asc
 
@@ -56,42 +56,20 @@ function setupCollapse(headId, bodyId) {
 
 // ---------- 刷新行情 ----------
 
-// 数据源1: fundgz（天天基金实时估值）
+// 数据源1: fundgz（天天基金实时估值，通过调度器）
 function fetchFundValuationGz(code) {
-  return new Promise((resolve) => {
-    const timeout = setTimeout(() => { cleanup(); resolve(null); }, 5000);
-    const cbName = '_hfgz_' + Date.now();
-
-    function cleanup() {
-      clearTimeout(timeout);
-      delete window[cbName];
-      delete window.jsonpgz;
-      const s = document.getElementById(cbName);
-      if (s) s.remove();
-    }
-
-    window[cbName] = (data) => {
-      cleanup();
-      if (!data || !data.fundcode) { resolve(null); return; }
-      resolve({
-        code: String(data.fundcode).trim(),
-        name: data.name || '',
-        dwjz: parseFloat(data.dwjz) || 0,
-        gsz: parseFloat(data.gsz) || 0,
-        gszzl: parseFloat(data.gszzl) || 0,
-        gztime: data.gztime || '',
-        jzrq: data.jzrq || '',
-        source: 'fundgz',
-      });
+  return fetchWithDispatcher(code, 5000).then(data => {
+    if (!data || !data.fundcode) return null;
+    return {
+      code: String(data.fundcode).trim(),
+      name: data.name || '',
+      dwjz: parseFloat(data.dwjz) || 0,
+      gsz: parseFloat(data.gsz) || 0,
+      gszzl: parseFloat(data.gszzl) || 0,
+      gztime: data.gztime || '',
+      jzrq: data.jzrq || '',
+      source: 'fundgz',
     };
-
-    window.jsonpgz = (data) => { window[cbName](data); };
-
-    const script = document.createElement('script');
-    script.id = cbName;
-    script.src = `https://fundgz.1234567.com.cn/js/${encodeURIComponent(code)}.js?rt=${Date.now()}`;
-    script.onerror = () => { cleanup(); resolve(null); };
-    document.head.appendChild(script);
   });
 }
 

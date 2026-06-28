@@ -2,7 +2,7 @@
 
 import * as store from './store.js';
 import { streamChat } from './providers.js';
-import { renderMarkdown, toast, showModal, debounce, searchFundMulti, searchFund, searchFundLocal, loadFundDatabase, loadManagerDatabase, getManagerFunds, detectSectorFromHoldings } from './utils.js';
+import { renderMarkdown, toast, showModal, searchFundMulti, searchFund, searchFundLocal, loadFundDatabase, loadManagerDatabase, getManagerFunds, detectSectorFromHoldings, fetchWithDispatcher } from './utils.js';
 
 // ---------- 状态 ----------
 let selectedFund = null;       // { code, name }
@@ -233,39 +233,14 @@ async function fetchFundData(code) {
 }
 
 function fetchRealtimeNAV(code) {
-  return new Promise((resolve) => {
-    const timeout = setTimeout(() => { cleanup(); resolve(null); }, 3000);
-    const cbName = '_rtnav_' + Date.now();
-
-    function cleanup() {
-      clearTimeout(timeout);
-      delete window[cbName];
-      delete window.jsonpgz;
-      const s = document.getElementById(cbName);
-      if (s) s.remove();
-    }
-
-    window[cbName] = (data) => {
-      cleanup();
-      if (data) {
-        resolve({
-          dwjz: parseFloat(data.dwjz) || 0,
-          gsz: parseFloat(data.gsz) || 0,
-          gszzl: parseFloat(data.gszzl) || 0,
-          gztime: data.gztime || '',
-        });
-      } else {
-        resolve(null);
-      }
+  return fetchWithDispatcher(code, 4000).then(data => {
+    if (!data) return null;
+    return {
+      dwjz: parseFloat(data.dwjz) || 0,
+      gsz: parseFloat(data.gsz) || 0,
+      gszzl: parseFloat(data.gszzl) || 0,
+      gztime: data.gztime || '',
     };
-
-    window.jsonpgz = (data) => { window[cbName](data); };
-
-    const script = document.createElement('script');
-    script.id = cbName;
-    script.src = `https://fundgz.1234567.com.cn/js/${encodeURIComponent(code)}.js`;
-    script.onerror = () => { cleanup(); resolve(null); };
-    document.head.appendChild(script);
   });
 }
 

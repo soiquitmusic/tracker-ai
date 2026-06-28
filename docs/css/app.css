@@ -1000,6 +1000,57 @@ input, textarea, select, button { font-family: inherit; font-size: 14px; }
 .fund-picker-item:hover { background: var(--primary-bg); border-color: var(--primary-light); }
 .fund-picker-item .fp-code { font-size: 11px; color: var(--text-soft); font-family: monospace; }
 
+/* ===== 手机适配 ===== */
+@media (max-width: 640px) {
+  /* 持仓页 */
+  .holding-detail { font-size: 11px; }
+  .holding-detail div { font-size: 11px; }
+  .holdings-summary { padding: 6px 8px; gap: 4px; }
+  .hs-item { min-width: 70px; padding: 5px 6px; }
+  .hs-item .hs-val { font-size: 13px; }
+
+  /* 行情页表格 */
+  .ov-table-wrap { margin: 0 4px; border-radius: 6px; }
+  .ov-table th { padding: 6px 8px; font-size: 10px; }
+  .ov-table td { padding: 6px 8px; font-size: 11px; }
+  .ov-th-name { min-width: 120px; max-width: 140px; }
+  .ov-th-num { min-width: 58px; }
+  .ov-td-name-text { font-size: 12px; max-width: 120px; }
+  .ov-td-code { font-size: 9px; padding: 1px 4px; }
+  .ov-summary-bar { font-size: 10px; padding: 6px 8px; margin: 0 4px; }
+  .ov-summary-bar b { font-size: 11px; }
+  .ov-filter-btn { padding: 2px 5px; font-size: 9px; }
+  .ov-sector-chip { font-size: 9px; padding: 1px 5px; }
+
+  /* 对比页 */
+  .cmp-select { font-size: 11px; padding: 3px; max-width: 90px; }
+  .cmp-vs { font-size: 11px; }
+
+  /* 分析页 - 搜索区已经在 analysis-top-bar 里响应了 */
+  .analysis-search-input { font-size: 13px; }
+  .analysis-search-res-item { padding: 10px 12px; }
+  .analysis-search-res-item .res-name { font-size: 13px; }
+  .analysis-fund-hero { padding: 10px; }
+  .analysis-fund-hero .hero-name { font-size: 14px; }
+  .analysis-metrics-grid { grid-template-columns: 1fr 1fr; gap: 4px; }
+  .analysis-metric { padding: 5px 0; font-size: 11px; }
+  .analysis-fw-card { padding: 10px; }
+  .analysis-fw-card .fw-icon { width: 30px; height: 30px; font-size: 15px; }
+  .analysis-fw-card .fw-title { font-size: 12px; }
+  .analysis-fw-card .fw-score-big { font-size: 22px; }
+  .analysis-verdict .verdict-score { font-size: 36px; }
+
+  /* 设置页 */
+  .settings-toggle { font-size: 12px; }
+
+  /* 模态框 */
+  .modal { margin: 10px; max-width: 100%; }
+  .modal h3 { font-size: 15px; }
+
+  /* 空白提示 */
+  .empty-hint { font-size: 12px; padding: 20px; }
+}
+
 /* ===== 桌面适配 ===== */
 @media (min-width: 768px) {
   .chat-sidebar {
