@@ -96,19 +96,23 @@ function onSearchInput(value) {
 function doSearch() {
   const input = document.getElementById('analysis-search-input');
   const kw = input.value.trim();
-  if (!kw) { toast('请输入基金代码或名称'); input.focus(); return; }
 
-  const resultsEl = document.getElementById('analysis-search-results');
-  resultsEl.innerHTML = '<div class="analysis-search-res-item" style="justify-content:center;color:var(--text-soft);">搜索中…</div>';
-  resultsEl.style.display = '';
+  // 有输入 → 尝试搜索（本地+网络）
+  if (kw.length >= 2) {
+    const resultsEl = document.getElementById('analysis-search-results');
+    resultsEl.innerHTML = '<div class="analysis-search-res-item" style="justify-content:center;color:var(--text-soft);">搜索中…</div>';
+    resultsEl.style.display = '';
 
-  // 先试本地
-  const local = searchFundLocal(kw);
-  if (local.length > 0) { renderSearchResults(local.slice(0, 20)); return; }
+    const local = searchFundLocal(kw);
+    if (local.length > 0) { renderSearchResults(local.slice(0, 20)); return; }
 
-  // 再用网络
-  const p = /^\d{6}$/.test(kw) ? searchFund(kw).then(f => f ? [f] : searchFundMulti(kw)) : searchFundMulti(kw);
-  p.then(r => { renderSearchResults(r || []); });
+    const p = /^\d{6}$/.test(kw) ? searchFund(kw).then(f => f ? [f] : searchFundMulti(kw)) : searchFundMulti(kw);
+    p.then(r => { renderSearchResults(r && r.length > 0 ? r : [{code:kw, name:kw+' (未查到名称，可手动填写)'}]); });
+    return;
+  }
+
+  // 无输入或输入过短 → 弹出持仓选择（100%本地，不依赖网络）
+  openHoldingsPicker();
 }
 
 function renderSearchResults(results) {
