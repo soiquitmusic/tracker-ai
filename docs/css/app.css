@@ -632,33 +632,34 @@ input, textarea, select, button { font-family: inherit; font-size: 14px; }
 
 /* ===== 分析页（v2 重新设计）===== */
 
-/* 顶部：紧凑搜索+选择+按钮 */
+/* 顶部：搜索+选择+按钮 */
 .analysis-top-bar {
-  display: flex; align-items: center; gap: 8px;
-  padding: 10px 12px 0;
+  display: flex; align-items: center; gap: 6px;
+  padding: 12px 10px 0; flex-wrap: wrap;
 }
 .analysis-search-wrap {
-  position: relative;
+  position: relative; flex: 1; min-width: 140px;
   display: flex; align-items: center;
   background: var(--card); border: 2px solid var(--border);
-  border-radius: 12px; padding: 2px;
+  border-radius: 10px; overflow: hidden;
   transition: border-color .2s, box-shadow .2s;
 }
 .analysis-search-wrap:focus-within {
   border-color: var(--primary);
-  box-shadow: 0 0 0 4px rgba(30,64,175,.08);
+  box-shadow: 0 0 0 3px rgba(30,64,175,.08);
 }
 .analysis-search-icon {
-  font-size: 18px; padding: 0 6px 0 12px; flex-shrink: 0;
+  font-size: 16px; padding: 0 4px 0 10px; flex-shrink: 0;
 }
 .analysis-search-input {
-  flex: 1; padding: 10px 8px; border: none; outline: none;
-  font-size: 15px; background: transparent; color: var(--text);
+  flex: 1; padding: 9px 4px; border: none; outline: none;
+  font-size: 14px; background: transparent; color: var(--text);
+  min-width: 60px;
 }
-.analysis-search-input::placeholder { color: #94a3b8; }
+.analysis-search-input::placeholder { color: #94a3b8; font-size: 13px; }
 .analysis-search-clear {
-  display: none; padding: 6px 10px; cursor: pointer;
-  font-size: 14px; color: var(--text-soft); border: none; background: none;
+  display: none; padding: 4px 8px; cursor: pointer;
+  font-size: 13px; color: var(--text-soft); border: none; background: none;
 }
 .analysis-search-clear.visible { display: block; }
 
@@ -708,6 +709,29 @@ input, textarea, select, button { font-family: inherit; font-size: 14px; }
 .analysis-shortcut-chip:hover {
   border-color: var(--primary-light); color: var(--primary);
   background: var(--primary-bg);
+}
+
+/* 移动端适配 */
+@media (max-width: 640px) {
+  .analysis-top-bar { padding: 8px 8px 0; gap: 4px; }
+  .analysis-search-wrap { min-width: 120px; }
+  .analysis-search-input { font-size: 13px; padding: 8px 2px; }
+  .analysis-search-input::placeholder { font-size: 12px; }
+  .analysis-search-icon { font-size: 14px; padding: 0 2px 0 6px; }
+  .analysis-selected-card { margin: 6px 8px 0; padding: 6px 10px; font-size: 12px; }
+  .analysis-results { padding: 8px; gap: 8px; }
+  .analysis-fw-card { padding: 10px; border-radius: 10px; }
+  .analysis-fw-card .fw-icon { width: 30px; height: 30px; border-radius: 8px; font-size: 15px; }
+  .analysis-fw-card .fw-title { font-size: 12px; }
+  .analysis-fw-card .fw-score-big { font-size: 22px; }
+  .analysis-verdict { padding: 12px; border-radius: 12px; }
+  .analysis-verdict .verdict-score { font-size: 36px; }
+  .analysis-fund-hero { padding: 12px; border-radius: 12px; }
+  .analysis-fund-hero .hero-name { font-size: 14px; }
+  .analysis-metrics-grid { grid-template-columns: 1fr 1fr; gap: 4px; }
+  .analysis-metric { padding: 4px 0; font-size: 11px; }
+  .analysis-ai-card { padding: 10px; border-radius: 12px; }
+  .analysis-ai-content { font-size: 12px; }
 }
 
 /* 选中基金卡片（紧凑） */

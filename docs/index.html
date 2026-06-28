@@ -111,17 +111,18 @@
     <div class="page-header">
       <h2>分析</h2>
     </div>
-    <!-- 紧凑顶部区：搜索 + 选择 + 按钮 -->
+    <!-- 搜索 + 选择 + 按钮 -->
     <div class="analysis-top-bar">
       <div class="analysis-search-wrap">
         <span class="analysis-search-icon">🔍</span>
-        <input id="analysis-search-input" type="text" placeholder="输入基金名称或代码…" class="analysis-search-input" autocomplete="off">
+        <input id="analysis-search-input" type="text" placeholder="搜索基金…" class="analysis-search-input" autocomplete="off">
+        <button id="btn-analysis-search" class="btn primary" style="font-size:12px;padding:6px 10px;border-radius:0 8px 8px 0;flex-shrink:0;">搜索</button>
         <button id="btn-analysis-search-clear" class="analysis-search-clear" title="清除">✕</button>
         <div id="analysis-search-results" class="analysis-search-results" style="display:none;"></div>
       </div>
       <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
-        <span class="analysis-shortcut-chip" id="btn-pick-holdings" style="margin:0;">📋</span>
-        <button id="btn-analysis-start" class="btn primary" disabled style="font-size:12px;padding:6px 12px;white-space:nowrap;">🔬 分析</button>
+        <span class="analysis-shortcut-chip" id="btn-pick-holdings">📋</span>
+        <button id="btn-analysis-start" class="btn primary" disabled style="font-size:12px;padding:6px 10px;white-space:nowrap;">分析</button>
       </div>
     </div>
     <!-- 选中基金 -->

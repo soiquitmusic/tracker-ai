@@ -21,6 +21,8 @@ export function initAnalysis(containerEl) {
   const clearSelBtn = document.getElementById('btn-analysis-clear-selection');
   const clearHistoryBtn = document.getElementById('btn-clear-analysis-history');
   const clearSearchBtn = document.getElementById('btn-analysis-search-clear');
+  const searchBtn = document.getElementById('btn-analysis-search');
+  if (searchBtn) searchBtn.onclick = () => doSearch();
   const toggleHistory = document.getElementById('toggle-analysis-history');
 
   loadFundDatabase();
