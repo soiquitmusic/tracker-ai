@@ -358,8 +358,8 @@ function parseFundData(j5data, code, realtimeNAV) {
     managerStartDate,
     managerIdea,
     nav,
-    gszzl: realtimeNAV?.gszzl ?? null,
-    gztime: realtimeNAV?.gztime ?? '',
+    gszzl: realtimeNAV?.gszzl ?? parseFloat(jjfx.RZDF) || null,
+    gztime: realtimeNAV?.gztime ?? (parseFloat(jjfx.RZDF) ? jjfx.FSRQ || '' : ''),
     topHoldings,
   };
 

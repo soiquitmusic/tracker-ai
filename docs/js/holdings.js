@@ -207,10 +207,31 @@ async function fetchFundValuation(code) {
     const sina = await fetchFundValuationSina(code);
     if (sina && sina.dwjz > 0) return sina;
   }
+  // j5 API fallback (支持 QDII，fundgz 无数据时使用 RZDF)
+  const j5 = await fetchFundValuationJ5(code);
+  if (j5) return j5;
   // F10 final fallback
   const f10 = await fetchFundF10Nav(code);
   if (f10) return { ...f10, gsz: 0, gszzl: 0, gztime: '' };
   return null;
+}
+
+async function fetchFundValuationJ5(code) {
+  try {
+    const r = await fetch('https://j5.dfcfw.com/sc/tfs/qt/v2.0.1/' + code + '.json');
+    if (!r.ok) return null;
+    const d = await r.json();
+    const jf = (d.JJFX || {}).Datas || {};
+    const rzdf = parseFloat(jf.RZDF) || 0;
+    const dwjz = parseFloat(jf.DWJZ) || 0;
+    if (!dwjz) return null;
+    return {
+      code, name: jf.SHORTNAME || '',
+      dwjz, gsz: 0, gszzl: rzdf,
+      gztime: jf.FSRQ || '', jzrq: jf.FSRQ || '',
+      lastNav: 0, zzl: rzdf, source: 'j5',
+    };
+  } catch { return null; }
 }
 
 // 使用 asyncPool 控制并发（最多3个同时请求）
