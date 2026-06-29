@@ -106,11 +106,9 @@ function fetchGz(code){
 }
 
 async function fetchValuation(code){
-  const [j5, gz] = await Promise.all([
-    fetchJ5Quick(code),
-    fetchGz(code),
-  ]);
+  const j5=await fetchJ5Quick(code);
   if(!j5)return null;
+  const gz=await fetchGz(code);
   if(gz){ j5.gsz=parseFloat(gz.gsz)||0; j5.gszzl=parseFloat(gz.gszzl)||0; j5.gztime=gz.gztime||''; j5.jzrq=gz.jzrq||j5.jzrq; if(gz.name&&!j5.name)j5.name=gz.name; }
   else if(j5.rzdf){ j5.gszzl=j5.rzdf; j5.gztime=j5.jzrq; }
   return j5;
