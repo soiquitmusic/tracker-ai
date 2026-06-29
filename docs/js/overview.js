@@ -95,8 +95,9 @@ async function fetchJ5Quick(code){
     const map={}; for(const it of jdzf){ const t=it.title,v=parseFloat(it.syl); if(t&&!isNaN(v))map[t]=v; }
     let sector='';
     try{ const st=(d.JJCCNEW?.data?.InverstPosition?.fundStocks||[]).slice(0,10); sector=detectSectorFromHoldings(st.map(s=>s.GPJC||'').filter(Boolean))[0]||''; }catch{}
-    return { code,name:jf.SHORTNAME||'',dwjz:parseFloat(jf.DWJZ)||0,jzrq:'',gsz:0,gszzl:0,gztime:'',sector,
-      periods:{'1M':map['1Y'],'3M':map['3Y'],'6M':map['6Y'],'1Y':map['1N'],'YTD':map['JN']} };
+    return { code,name:jf.SHORTNAME||'',dwjz:parseFloat(jf.DWJZ)||0,jzrq:jf.FSRQ||'',gsz:0,gszzl:0,gztime:'',sector,
+      rzdf:parseFloat(jf.RZDF)||0,
+      periods:{'1M':map['Y'],'3M':map['3Y'],'6M':map['6Y'],'1Y':map['1N'],'YTD':map['JN']} };
   }catch{ return null; }
 }
 
@@ -108,7 +109,8 @@ async function fetchValuation(code){
   const j5=await fetchJ5Quick(code);
   if(!j5)return null;
   const gz=await fetchGz(code);
-  if(gz){ j5.gsz=parseFloat(gz.gsz)||0; j5.gszzl=parseFloat(gz.gszzl)||0; j5.gztime=gz.gztime||''; j5.jzrq=gz.jzrq||''; if(gz.name&&!j5.name)j5.name=gz.name; }
+  if(gz){ j5.gsz=parseFloat(gz.gsz)||0; j5.gszzl=parseFloat(gz.gszzl)||0; j5.gztime=gz.gztime||''; j5.jzrq=gz.jzrq||j5.jzrq; if(gz.name&&!j5.name)j5.name=gz.name; }
+  else if(j5.rzdf){ j5.gszzl=j5.rzdf; j5.gztime=j5.jzrq; }
   return j5;
 }
 
