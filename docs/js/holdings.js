@@ -195,21 +195,18 @@ function fetchFundValuationSina(code) {
 // 统一估值获取: 按用户数据源设置
 async function fetchFundValuation(code) {
   const ds = getDataSource();
-  if (ds === 2) {
-    const sina = await fetchFundValuationSina(code);
-    if (sina && sina.dwjz > 0) return sina;
-  }
-  // fundgz
-  const gz = await fetchFundValuationGz(code);
+  // 并行发起 fundgz 和 j5（j5 作为 fundgz 为空时的降级）
+  const [gz, j5] = await Promise.all([
+    ds === 2 ? fetchFundValuationSina(code) : fetchFundValuationGz(code),
+    fetchFundValuationJ5(code),
+  ]);
   if (gz && gz.dwjz > 0) return gz;
-  // Sina fallback
+  if (j5 && j5.dwjz > 0) return j5;
+  // Sina fallback（当 dataSource=1 时 fundgz 失败后的备用）
   if (ds !== 2) {
     const sina = await fetchFundValuationSina(code);
     if (sina && sina.dwjz > 0) return sina;
   }
-  // j5 API fallback (支持 QDII，fundgz 无数据时使用 RZDF)
-  const j5 = await fetchFundValuationJ5(code);
-  if (j5) return j5;
   // F10 final fallback
   const f10 = await fetchFundF10Nav(code);
   if (f10) return { ...f10, gsz: 0, gszzl: 0, gztime: '' };
