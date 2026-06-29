@@ -4,6 +4,7 @@ import { toast, showModal, detectSectorFromHoldings, fetchWithDispatcher } from 
 
 let refreshTimer = null, lastUpdateTime = null, fundRows = [], isRefreshing = false;
 let currentGroupId = 'all', currentFilter = '全部';
+let sortState = { key: null, dir: 'none' };
 
 const ALL_COLUMNS = [
   { key:'name', label:'基金名称', visible:true, fixed:true },
@@ -25,11 +26,54 @@ function saveColumnConfig(c){ localStorage.setItem('ovColumns',JSON.stringify(c)
 function getCustomFilters(){ try{ return JSON.parse(localStorage.getItem('overviewFilters'))||[]; }catch{ return []; } }
 function saveCustomFilters(l){ localStorage.setItem('overviewFilters',JSON.stringify(l)); }
 
+// ===== 排序 =====
+
+function getSortValue(f, key){
+  let v;
+  switch(key){
+    case 'change': return (v=parseFloat(f.gszzl), isNaN(v)?null:v);
+    case 'today': return (v=parseFloat(f.todayProfit), isNaN(v)?null:v);
+    case 'profit': return (v=parseFloat(f.profit), isNaN(v)?null:v);
+    case '1M': case '3M': case '6M': case '1Y':
+      return f.periods&&f.periods[key]!=null ? ((v=parseFloat(f.periods[key])), isNaN(v)?null:v) : null;
+    case 'amount': return (v=parseFloat(f.mv), isNaN(v)?null:v);
+    case 'nav': return (v=parseFloat(f.gsz)||parseFloat(f.dwjz)||0, isNaN(v)?null:v);
+    default: return null;
+  }
+}
+
+function handleSortClick(key){
+  if(key==='name'||key==='sector')return;
+  if(sortState.key===key){
+    if(sortState.dir==='desc')sortState.dir='asc';
+    else if(sortState.dir==='asc'){sortState.dir='none';sortState.key=null;}
+    else sortState.dir='desc';
+  }else{ sortState.key=key; sortState.dir='desc'; }
+  renderTable();
+}
+
+function sortFunds(list){
+  if(sortState.dir==='none')return list;
+  const{key,dir}=sortState;
+  return[...list].sort((a,b)=>{
+    const va=getSortValue(a,key),vb=getSortValue(b,key);
+    const aOk=va!==null,bOk=vb!==null;
+    if(!aOk&&!bOk)return 0;
+    if(!aOk)return 1;
+    if(!bOk)return -1;
+    return dir==='desc'?vb-va:va-vb;
+  });
+}
+
 export function initOverview(){
   document.getElementById('btn-refresh-overview').onclick = ()=>refreshAll();
   document.getElementById('btn-sort-overview').onclick = ()=>openColumnSettings();
   document.getElementById('btn-sort-overview').textContent = '⚙️';
   window.addEventListener('holdings-changed',()=>refreshAll());
+  document.getElementById('overview-list').addEventListener('click',e=>{
+    const th=e.target.closest('th[data-key]');
+    if(th)handleSortClick(th.dataset.key);
+  });
   renderFilterBar(); refreshAll();
 }
 export function onOverviewVisible(){ refreshAll(); startAutoRefresh(); }
@@ -153,8 +197,9 @@ async function refreshAll(silent){
 function renderTable(){
   const el=document.getElementById('overview-list'); if(!fundRows.length){el.innerHTML='<div class="empty-hint">暂无持仓</div>';return;}
   let ft=fundRows.filter(f=>matchFilter(f,currentFilter));
+  if(sortState.dir!=='none')ft=sortFunds(ft);
   const cols=getColumnConfig().filter(c=>c.visible),tmv=ft.reduce((s,f)=>s+(f.mv||0),0);
-  el.innerHTML=`<div class="ov-table-wrap"><table class="ov-table"><thead><tr>${cols.map(c=>{const isF=c.key==='name'?' ov-th-name':'';const isN=c.key!=='name'&&c.key!=='sector'?' ov-th-num':'';return`<th class="${isF}${isN}">${c.label}</th>`;}).join('')}</tr></thead><tbody>${ft.map(f=>renderRow(f,tmv,cols)).join('')}</tbody></table></div>`;
+  el.innerHTML=`<div class="ov-table-wrap"><table class="ov-table"><thead><tr>${cols.map(c=>{const isF=c.key==='name'?' ov-th-name':'';const isN=c.key!=='name'&&c.key!=='sector'?' ov-th-num':'';const isSortable=c.key!=='name'&&c.key!=='sector';const isSorted=sortState.key===c.key&&sortState.dir!=='none';const sortCls=isSorted?(sortState.dir==='desc'?' sort-desc':' sort-asc'):'';return`<th class="${isF}${isN}${sortCls}${isSortable?' sortable':''}"${isSortable?` data-key="${c.key}"`:''}>${c.label}</th>`;}).join('')}</tr></thead><tbody>${ft.map(f=>renderRow(f,tmv,cols)).join('')}</tbody></table></div>`;
 }
 
 function renderRow(f,tmv,cols){

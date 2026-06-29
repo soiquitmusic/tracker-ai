@@ -345,6 +345,10 @@ input, textarea, select, button { font-family: inherit; font-size: 14px; }
   position: sticky; left: 0; z-index: 7; background: #f1f5f9 !important;
 }
 .ov-th-num { min-width: 76px; white-space: nowrap; }
+.ov-table thead th.sortable { cursor: pointer; user-select: none; }
+.ov-table thead th.sortable:hover { background: #e2e8f0; }
+.ov-table thead th.sort-desc::after { content: ' ↓'; }
+.ov-table thead th.sort-asc::after { content: ' ↑'; }
 
 .ov-table tbody td {
   padding: 9px 12px; text-align: center; white-space: nowrap;
