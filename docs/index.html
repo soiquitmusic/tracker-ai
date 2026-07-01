@@ -9,7 +9,6 @@
   <meta name="apple-touch-icon" href="icons/icon-192.png">
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="css/app.css">
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
   <title>基金AI助手</title>
 </head>
 <body>
@@ -146,20 +145,6 @@
     </div>
   </section>
 
-  <!-- 半导体设备趋势页 -->
-  <section id="page-trend" class="page">
-    <div class="page-header">
-      <h2>📡 半导体设备趋势</h2>
-      <div class="header-actions">
-        <span id="trend-last-update" class="ov-time"></span>
-        <button id="btn-trend-refresh" class="btn">刷新</button>
-      </div>
-    </div>
-    <div id="trend-content" class="trend-content" style="padding:0 12px 12px;overflow-y:auto;flex:1;">
-      <div class="empty-hint">加载中...</div>
-    </div>
-  </section>
-
   <!-- 设置页 -->
   <section id="page-settings" class="page">
     <div class="page-header">
@@ -227,10 +212,6 @@
       <span class="tab-icon">🔬</span>
       <span class="tab-label">分析</span>
     </button>
-    <button class="tab-btn" data-tab="trend">
-      <span class="tab-icon">📡</span>
-      <span class="tab-label">趋势</span>
-    </button>
     <button class="tab-btn" data-tab="holdings">
       <span class="tab-icon">📊</span>
       <span class="tab-label">持仓</span>
@@ -247,7 +228,7 @@
   <!-- 强制版本同步 -->
   <script>
   (function(){
-    var APP_VERSION = 73;
+    var APP_VERSION = 74;
     var stored = parseInt(localStorage.getItem('app_version') || '0');
     if (stored < APP_VERSION) {
       localStorage.setItem('app_version', APP_VERSION);

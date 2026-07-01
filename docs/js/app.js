@@ -6,7 +6,6 @@ import { initOverview, onOverviewVisible, onOverviewHidden } from './overview.js
 import { initCompare, onCompareVisible } from './compare.js';
 import { initAnalysis, onAnalysisVisible } from './analysis.js';
 import { initSettings } from './settings.js';
-import { initTrend, onTrendVisible, onTrendHidden } from './trend.js';
 
 // Tab 切换
 const tabs = document.querySelectorAll('.tab-btn');
@@ -23,8 +22,6 @@ function switchTab(tabName) {
   else if (prevTab === 'overview') onOverviewHidden();
   if (tabName === 'analysis') onAnalysisVisible();
   if (tabName === 'compare') onCompareVisible();
-  if (tabName === 'trend') onTrendVisible();
-  else if (prevTab === 'trend') onTrendHidden();
 }
 
 tabs.forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
@@ -36,7 +33,6 @@ initCompare(document.getElementById('page-compare'));
 initOverview(document.getElementById('page-overview'));
 initAnalysis();
 initSettings(document.getElementById('page-settings'));
-initTrend();
 
 // 恢复上次 Tab（兼容旧值 briefing/qdii -> analysis）
 let savedTab = localStorage.getItem('activeTab') || 'chat';
