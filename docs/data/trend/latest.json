@@ -1,1 +1,98 @@
-{"date": "", "generated_at": "", "compositeScore": 50, "compositeLabel": "暂无数据", "moduleA": {"score": 50, "label": "--", "subIndicators": []}, "moduleB": {"score": 50, "label": "--", "subIndicators": []}}
+{
+  "date": "2026-07-01",
+  "generated_at": "2026-07-01 21:54:31",
+  "compositeScore": 37.5,
+  "compositeLabel": "A:筑底 B:Late",
+  "moduleA": {
+    "score": 35.8,
+    "label": "筑底",
+    "subIndicators": [
+      {
+        "key": "ai_demand",
+        "name": "AI需求",
+        "module": "A",
+        "score": 54.3,
+        "signal": "neutral",
+        "detail": "NVDA:21 Hype:73 News:8"
+      },
+      {
+        "key": "semiconductor_capex",
+        "name": "资本开支",
+        "module": "A",
+        "score": 24.8,
+        "signal": "negative",
+        "detail": "Stocks:10 News:35(1)"
+      },
+      {
+        "key": "equipment_orders",
+        "name": "设备订单",
+        "module": "A",
+        "score": 27.5,
+        "signal": "negative",
+        "detail": "Stocks:24 News:30(2) Sector:0"
+      },
+      {
+        "key": "profit_trend",
+        "name": "盈利趋势",
+        "module": "A",
+        "score": 50,
+        "signal": "neutral",
+        "detail": "3M avg:50 (0 stocks)"
+      },
+      {
+        "key": "localization",
+        "name": "国产替代",
+        "module": "A",
+        "score": 21.5,
+        "signal": "negative",
+        "detail": "News:20(0) Stocks:24"
+      }
+    ]
+  },
+  "moduleB": {
+    "score": 41.6,
+    "label": "Late",
+    "subIndicators": [
+      {
+        "key": "valuation",
+        "name": "估值水平",
+        "module": "B",
+        "score": 50,
+        "signal": "neutral",
+        "detail": "No PE data"
+      },
+      {
+        "key": "capital_flow",
+        "name": "资金流向",
+        "module": "B",
+        "score": 50,
+        "signal": "neutral",
+        "detail": "暂无数据"
+      },
+      {
+        "key": "earnings_reaction",
+        "name": "财报反应",
+        "module": "B",
+        "score": 10.0,
+        "signal": "negative",
+        "detail": "Up:0/5 (0%)"
+      },
+      {
+        "key": "technical_trend",
+        "name": "技术趋势",
+        "module": "B",
+        "score": 50,
+        "signal": "neutral",
+        "detail": "MA:50 (0 tickers)"
+      },
+      {
+        "key": "market_sentiment",
+        "name": "市场情绪",
+        "module": "B",
+        "score": 48.2,
+        "signal": "neutral",
+        "detail": "Leaders:12% Sector:50% News:8"
+      }
+    ]
+  }
+}

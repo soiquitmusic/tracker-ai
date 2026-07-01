@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 半导体设备趋势 — 每日采集 + 评分
-运行方式: python scripts/semicon_trend.py
+运行方式: python scripts/semicon_trend.py          # 真实数据采集
+         python scripts/semicon_trend.py --sample   # 生成示例数据（开发预览用）
 输出: docs/data/trend/latest.json + docs/data/trend/history.json
 """
 
@@ -33,7 +34,7 @@ def yf_quote(ticker):
             return r
     except Exception:
         pass
-    time.sleep(0.5)
+    time.sleep(1.5)  # 速率限制避让
     # v8 API fallback
     try:
         url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?interval=1d&range=5d"
@@ -42,7 +43,11 @@ def yf_quote(ticker):
         closes = [c for c in d["chart"]["result"][0]["indicators"]["quote"][0]["close"] if c is not None]
         if len(closes) >= 2:
             c2, c1 = float(closes[-2]), float(closes[-1])
-            r = {"price": round(c1, 2), "change_pct": round((c1 - c2) / c2 * 100, 2), "change": round(c1 - c2, 2)}
+            chg_pct = round((c1 - c2) / c2 * 100, 2)
+            # 合理性检查: 单日涨跌幅超过20%则丢弃（可能数据错误）
+            if abs(chg_pct) > 20:
+                return None
+            r = {"price": round(c1, 2), "change_pct": chg_pct, "change": round(c1 - c2, 2)}
             _quote_cache[ticker] = r
             return r
     except Exception:
@@ -79,32 +84,54 @@ def yf_pe(ticker):
 
 def em_fetch(url):
     try:
-        return json.loads(urlopen(Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=10).read())
+        d = json.loads(urlopen(Request(url, headers={"User-Agent": "Mozilla/5.0"}), timeout=10).read())
+        return d if isinstance(d, dict) else {}
     except Exception:
         return {}
+
+def em_safe(d, *keys):
+    """安全链式取值"""
+    for k in keys:
+        if not isinstance(d, dict):
+            return None
+        d = d.get(k)
+    return d
+
+def em_pct(v):
+    """东方财富 f3 是实际值×100，转为百分比"""
+    if v is None:
+        return None
+    return float(v) / 100
 
 def get_a_share_data():
     result = {}
     r = em_fetch("https://push2.eastmoney.com/api/qt/ulist.np/get?fields=f2,f3,f4,f12,f14&secids=1.000001,0.399001,0.399006,1.000688,100.HSI,100.HSTECH")
     em_map = {"1.000001": "上证指数", "0.399001": "深证成指", "0.399006": "创业板指",
                "1.000688": "科创50", "100.HSI": "恒生指数", "100.HSTECH": "恒生科技"}
-    for item in r.get("data", {}).get("diff", []):
+    for item in (em_safe(r, "data", "diff") or []):
         name = em_map.get(item.get("f12", ""), item.get("f14", ""))
-        result[name] = {"price": item.get("f2"), "chg_pct": item.get("f3")}
+        if item.get("f2") is not None:
+            result[name] = {"price": item.get("f2"), "chg_pct": em_pct(item.get("f3"))}
     r2 = em_fetch("https://push2.eastmoney.com/api/qt/kamt.kline/get?fields=f1,f2,f3,f4&klt=101")
-    result["北向资金"] = r2.get("data", {}).get("s2n", {}).get("f1", "--")
-    result["南向资金"] = r2.get("data", {}).get("n2s", {}).get("f1", "--")
+    nv = em_safe(r2, "data", "s2n", "f1")
+    sv = em_safe(r2, "data", "n2s", "f1")
+    if nv is not None: result["北向资金"] = nv
+    if sv is not None: result["南向资金"] = sv
     leaders = "0.300308,1.688256,1.688981,0.002371,1.688041,0.603501,0.603986,1.688012,0.002049,0.000977"
     ld_map = {"300308": "中际旭创", "688256": "寒武纪", "688981": "中芯国际", "002371": "北方华创",
                "688041": "海光信息", "603501": "韦尔股份", "603986": "兆易创新", "688012": "中微公司",
                "002049": "紫光国微", "000977": "浪潮信息"}
     r3 = em_fetch(f"https://push2.eastmoney.com/api/qt/ulist.np/get?fields=f2,f3,f4,f12,f14&secids={leaders}")
     result["龙头"] = {}
-    for item in r3.get("data", {}).get("diff", []):
+    for item in (em_safe(r3, "data", "diff") or []):
         name = ld_map.get(item.get("f12", ""), item.get("f14", ""))
-        result["龙头"][name] = {"price": item.get("f2"), "chg_pct": item.get("f3")}
+        if item.get("f2") is not None:
+            result["龙头"][name] = {"price": item.get("f2"), "chg_pct": em_pct(item.get("f3"))}
     r4 = em_fetch("https://push2.eastmoney.com/api/qt/clist/get?fields=f2,f3,f4,f12,f14&pn=1&pz=5&po=1&np=1&fltt=2&invt=2&fs=m:90+t3!bk:BK0988,BK0477,BK0478,BK0483")
-    result["板块"] = [{"name": i.get("f14"), "chg_pct": i.get("f3")} for i in r4.get("data", {}).get("diff", [])]
+    result["板块"] = []
+    for item in (em_safe(r4, "data", "diff") or []):
+        if item.get("f3") is not None:
+            result["板块"].append({"name": item.get("f14"), "chg_pct": em_pct(item.get("f3"))})
     return result
 
 # ─── RSS ───
@@ -147,13 +174,13 @@ def clamp(v, lo=0, hi=100):
 
 def score_ai_demand():
     nvda = yf_quote("NVDA")
-    nvda_score = 50 + (nvda["change_pct"] * 500 if nvda else 0)
+    nvda_score = 50 + (nvda["change_pct"] * 12 if nvda else 0)
     hs_tickers = ["MSFT", "AMZN", "META", "GOOGL"]
     hs_scores = []
     for t in hs_tickers:
         q = yf_quote(t)
         if q:
-            hs_scores.append(50 + q["change_pct"] * 500)
+            hs_scores.append(50 + q["change_pct"] * 12)
     hs_avg = sum(hs_scores) / len(hs_scores) if hs_scores else 50
     news = fetch_news(["AI", "artificial intelligence", "NVIDIA", "GPU"], 8)
     news_score = min(len(news) * 10, 90)
@@ -166,7 +193,7 @@ def score_capex():
     for t in fab_tickers:
         q = yf_quote(t)
         if q:
-            scores.append(50 + q["change_pct"] * 400)
+            scores.append(50 + q["change_pct"] * 10)
     stock_avg = sum(scores) / len(scores) if scores else 50
     news = fetch_news(["晶圆厂", "扩产", "fab", "产能", "foundry", "semiconductor", "chip plant"], 12)
     news_score = min(len(news) * 5 + 30, 90)
@@ -179,7 +206,7 @@ def score_equipment_orders():
     a_data = get_a_share_data()
     leaders = a_data.get("龙头", {})
     chg_pcts = [v["chg_pct"] for v in leaders.values() if v.get("chg_pct") is not None]
-    stock_avg = 50 + (sum(chg_pcts) / len(chg_pcts) * 300) if chg_pcts else 50
+    stock_avg = 50 + (sum(chg_pcts) / len(chg_pcts) * 10) if chg_pcts else 50
     news = fetch_news(["订单", "中标", "采购", "设备", "刻蚀", "薄膜", "CMP", "清洗", "检测"], 15)
     news_score = min(len(news) * 5 + 20, 100)
     sectors = a_data.get("板块", [])
@@ -197,7 +224,7 @@ def score_profit_trend():
         hist = yf_historical(t, "3mo")
         if len(hist) >= 20:
             ret = (hist[-1] / hist[0] - 1) * 100
-            scores.append(clamp(50 + ret * 200, 0, 100))
+            scores.append(clamp(50 + ret * 2, 0, 100))
     avg = sum(scores) / len(scores) if scores else 50
     return round(avg, 1), f"3M avg:{avg:.0f} ({len(scores)} stocks)"
 
@@ -207,7 +234,7 @@ def score_localization():
     a_data = get_a_share_data()
     leaders = a_data.get("龙头", {})
     chg_pcts = [v["chg_pct"] for v in leaders.values() if v.get("chg_pct") is not None]
-    stock_avg = 50 + (sum(chg_pcts) / len(chg_pcts) * 300) if chg_pcts else 50
+    stock_avg = 50 + (sum(chg_pcts) / len(chg_pcts) * 10) if chg_pcts else 50
     raw = news_score * 0.6 + stock_avg * 0.4
     return round(clamp(raw), 1), f"News:{news_score}({len(news)}) Stocks:{stock_avg:.0f}"
 
@@ -401,4 +428,58 @@ def run_pipeline():
     return output
 
 if __name__ == "__main__":
+    SAMPLE_MODE = "--sample" in sys.argv
+    if SAMPLE_MODE:
+        # 生成示例数据（不调用外部 API）
+        import json, os
+        today = date.today().isoformat()
+        now = datetime.now(TZ_BJ).strftime("%Y-%m-%d %H:%M:%S")
+        output = {
+            "date": today,
+            "generated_at": now,
+            "compositeScore": 71.5,
+            "compositeLabel": "A:扩张 B:Middle",
+            "moduleA": {
+                "score": 72.3, "label": "扩张",
+                "subIndicators": [
+                    {"key": "ai_demand", "name": "AI需求", "module": "A", "score": 92.0, "signal": "positive", "detail": "NVDA:+2.3% Hype:+1.8% News:12"},
+                    {"key": "semiconductor_capex", "name": "资本开支", "module": "A", "score": 85.0, "signal": "positive", "detail": "TSMC:+1.2% Intel:-0.8% MU:+2.5%"},
+                    {"key": "equipment_orders", "name": "设备订单", "module": "A", "score": 78.5, "signal": "positive", "detail": "北方华创:+3.2% 中微:+1.5% 订单新闻:8条"},
+                    {"key": "profit_trend", "name": "盈利趋势", "module": "A", "score": 68.0, "signal": "positive", "detail": "3M平均:+4.2% EPS上修趋势"},
+                    {"key": "localization", "name": "国产替代", "module": "A", "score": 44.0, "signal": "neutral", "detail": "导入验证新闻:4条"},
+                ]
+            },
+            "moduleB": {
+                "score": 69.7, "label": "Middle",
+                "subIndicators": [
+                    {"key": "valuation", "name": "估值水平", "module": "B", "score": 65.0, "signal": "positive", "detail": "NVDA PE:42 AMD PE:28 TSM PE:25"},
+                    {"key": "capital_flow", "name": "资金流向", "module": "B", "score": 78.0, "signal": "positive", "detail": "北向资金:+85亿"},
+                    {"key": "earnings_reaction", "name": "财报反应", "module": "B", "score": 82.0, "signal": "positive", "detail": "Up:4/5 (80%)"},
+                    {"key": "technical_trend", "name": "技术趋势", "module": "B", "score": 72.0, "signal": "positive", "detail": "SOX站上MA20/MA60"},
+                    {"key": "market_sentiment", "name": "市场情绪", "module": "B", "score": 51.0, "signal": "neutral", "detail": "龙头:60%上涨 板块:2/4上涨"},
+                ]
+            }
+        }
+        history = [
+            {"date": (date.today() - timedelta(days=i)).isoformat(),
+             "compositeScore": round(60 + 10 * (i / 30) + 5 * ((i % 7) - 3) / 3, 1),
+             "moduleAScore": round(58 + 12 * (i / 30) + 4 * ((i % 5) - 2), 1),
+             "moduleBScore": round(55 + 8 * (i / 30) + 6 * ((i % 4) - 1.5), 1),
+             "moduleALabel": "扩张" if i < 25 else "筑底",
+             "moduleBLabel": "Middle" if i < 20 else "Late",
+            }
+            for i in range(29, -1, -1)
+        ]
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(os.path.join(DATA_DIR, "latest.json"), "w", encoding="utf-8") as f:
+            json.dump(output, f, ensure_ascii=False, indent=2)
+        with open(os.path.join(DATA_DIR, "history.json"), "w", encoding="utf-8") as f:
+            json.dump(history, f, ensure_ascii=False, indent=2)
+        print(f"[OK] Sample data generated: {today}")
+        print(f"  Composite: {output['compositeScore']}")
+        print(f"  Industry A: {output['moduleA']['score']} - {output['moduleA']['label']}")
+        print(f"  Market B: {output['moduleB']['score']} - {output['moduleB']['label']}")
+        print(f"  History: {len(history)} days")
+        sys.exit(0)
+
     run_pipeline()
