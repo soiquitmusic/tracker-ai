@@ -1,14 +1,18 @@
-// ===== trend.js — 半导体设备趋势页 (GitHub Pages 版) =====
-// 数据来源: docs/data/trend/latest.json + history.json (由 GitHub Actions 每日生成)
+// ===== trend.js — 趋势页主入口（含子Tab切换）=====
+// 子Tab: 半导体设备 | AI产业链
 
 import { renderGauge, renderRadar, renderTrendLine, renderIndicatorBars } from './trend-charts.js';
 import { renderReport } from './trend-report.js';
+import { renderAIContent } from './ai-chain.js';
 
 let refreshTimer = null;
 let daysRange = 30;
+let activeSubTab = 'equipment';  // 'equipment' | 'ai-chain'
 
 export function initTrend() {
   document.getElementById('btn-trend-refresh')?.addEventListener('click', () => refresh());
+  // 恢复上次Tab
+  activeSubTab = localStorage.getItem('trendSubTab') || 'equipment';
 }
 
 export function onTrendVisible() {
@@ -22,7 +26,7 @@ export function onTrendHidden() {
 
 function startAutoRefresh() {
   stopAutoRefresh();
-  refreshTimer = setInterval(refresh, 300000); // 5 min
+  refreshTimer = setInterval(refresh, 300000);
 }
 
 function stopAutoRefresh() {
@@ -32,19 +36,52 @@ function stopAutoRefresh() {
 async function refresh() {
   const content = document.getElementById('trend-content');
   if (!content) return;
-  content.innerHTML = '<div class="empty-hint">加载中...</div>';
+  content.innerHTML = '';
+
+  // Build sub-tab navigation
+  let html = `<div class="trend-subtabs">
+    <button class="trend-subtab ${activeSubTab === 'equipment' ? 'active' : ''}" data-tab="equipment">🔧 半导体设备</button>
+    <button class="trend-subtab ${activeSubTab === 'ai-chain' ? 'active' : ''}" data-tab="ai-chain">🧠 AI产业链</button>
+    <span style="margin-left:auto;font-size:11px;color:var(--text-soft);" id="trend-subtab-info"></span>
+  </div>`;
+  html += `<div id="trend-sub-content"></div>`;
+
+  content.innerHTML = html;
+
+  // Bind sub-tab clicks
+  content.querySelectorAll('.trend-subtab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeSubTab = btn.dataset.tab;
+      localStorage.setItem('trendSubTab', activeSubTab);
+      refreshContent();
+    });
+  });
+
+  refreshContent();
+}
+
+async function refreshContent() {
+  if (activeSubTab === 'ai-chain') {
+    await renderAIContent('trend-sub-content');
+    const info = document.getElementById('trend-subtab-info');
+    if (info) info.textContent = '产业评分(70%) | 市场评分(30%) | 轮动空间=产业-市场';
+    return;
+  }
+
+  // === 半导体设备 ===
+  const subContent = document.getElementById('trend-sub-content');
+  if (!subContent) return;
+  subContent.innerHTML = '<div class="empty-hint">加载中...</div>';
 
   try {
-    // 从 GitHub Pages 静态 JSON 读取
     const latest = await fetchJSON('./data/trend/latest.json');
     const historyAll = await fetchJSON('./data/trend/history.json');
 
     if (!latest) {
-      content.innerHTML = '<div class="empty-hint">暂无数据，等待每日采集完成...</div>';
+      subContent.innerHTML = '<div class="empty-hint">暂无数据，等待每日采集完成...</div>';
       return;
     }
 
-    // 按天数过滤历史
     const history = historyAll ? historyAll.slice(-daysRange) : [];
 
     let html = '';
@@ -100,44 +137,31 @@ async function refresh() {
       <small>⚠️ 研究学习参考，非投资建议</small>
     </div>`;
 
-    content.innerHTML = html;
+    subContent.innerHTML = html;
 
-    // Render gauges
     renderGauge('gauge-composite', latest.compositeScore, latest.compositeLabel);
     renderGauge('gauge-module-a', latest.moduleA.score, latest.moduleA.label);
     renderGauge('gauge-module-b', latest.moduleB.score, latest.moduleB.label);
-
-    // Render radars
     renderRadar('radar-a', latest.moduleA.subIndicators, 'A');
     renderRadar('radar-b', latest.moduleB.subIndicators, 'B');
-
-    // Render timeline
-    if (history.length > 0) {
-      renderTrendLine('timeline-chart', history);
-    }
-
-    // Render bars
+    if (history.length > 0) renderTrendLine('timeline-chart', history);
     renderIndicatorBars('bars-a', latest.moduleA.subIndicators, '#3b82f6');
     renderIndicatorBars('bars-b', latest.moduleB.subIndicators, '#f59e0b');
-
-    // Render report (client-generated summary)
     renderReport('trend-report-area', latest, history, '');
 
-    // Bind day selector
-    content.querySelectorAll('.trend-days-bar .ov-filter-btn').forEach(btn => {
+    subContent.querySelectorAll('.trend-days-bar .ov-filter-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         daysRange = parseInt(btn.dataset.days);
-        refresh();
+        refreshContent();
       });
     });
 
-    // Update time
     const timeEl = document.getElementById('trend-last-update');
     if (timeEl) timeEl.textContent = `更新: ${latest.generatedAt || ''}`;
 
   } catch (e) {
-    content.innerHTML = `<div class="empty-hint">暂无数据，等待每日采集完成...</div>`;
-    console.error('Trend error:', e);
+    subContent.innerHTML = '<div class="empty-hint">暂无数据</div>';
+    console.error('Equipment trend error:', e);
   }
 }
 
