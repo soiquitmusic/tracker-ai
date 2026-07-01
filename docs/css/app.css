@@ -1067,3 +1067,38 @@ input, textarea, select, button { font-family: inherit; font-size: 14px; }
   #btn-toggle-sidebar { display: none; }
   .modal { max-width: 520px; }
 }
+
+/* ===== 趋势页 ===== */
+.trend-content { padding-bottom: 20px !important; }
+.trend-gauges { display: flex; gap: 8px; margin-bottom: 8px; }
+.trend-gauges > div { flex: 1; min-width: 0; background: var(--card); border-radius: var(--radius); padding: 4px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.trend-days-bar { display: flex; gap: 6px; padding: 4px 0 8px; }
+.trend-charts-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.trend-chart-box { flex: 1; min-width: 0; background: var(--card); border-radius: var(--radius); padding: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.trend-section { margin-bottom: 8px; }
+.trend-section h3 { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.trend-score-cards { display: flex; gap: 8px; margin: 8px 0; }
+.trend-card { flex: 1; background: var(--card); border-radius: var(--radius); padding: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.trend-card-title { font-size: 11px; color: var(--text-soft); margin-bottom: 4px; }
+.trend-card-score { font-size: 28px; font-weight: 800; }
+.trend-card-bar { margin: 4px 0; font-size: 11px; color: var(--text-soft); }
+.trend-card-bar code { font-size: 11px; letter-spacing: 1px; }
+.trend-card-label { font-size: 13px; font-weight: 600; }
+.trend-table { width: 100%; border-collapse: collapse; font-size: 12px; background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.trend-table th { background: #f1f5f9; padding: 8px 10px; text-align: left; font-weight: 600; font-size: 11px; color: #475569; }
+.trend-table td { padding: 7px 10px; border-bottom: 1px solid #f1f5f9; }
+.trend-table tr:last-child td { border-bottom: none; }
+.trend-source { font-size: 11px; color: var(--text-soft); line-height: 1.6; }
+.trend-narrative { background: var(--card); border-radius: var(--radius); padding: 12px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,.06); font-size: 13px; line-height: 1.7; }
+.trend-narrative h2 { font-size: 15px; margin: 10px 0 6px; }
+.trend-narrative h3 { font-size: 14px; margin: 8px 0 4px; }
+.trend-narrative ul { padding-left: 16px; margin: 4px 0; }
+.trend-narrative li { margin-bottom: 3px; }
+
+@media (max-width: 640px) {
+  .trend-gauges { flex-direction: column; gap: 6px; }
+  .trend-gauges > div { width: 100% !important; }
+  .trend-charts-row { flex-direction: column; }
+  .trend-score-cards { flex-direction: column; }
+  .trend-card-score { font-size: 22px; }
+}
