@@ -1,57 +1,57 @@
 {
   "date": "2026-07-01",
-  "generated_at": "2026-07-01 21:54:31",
-  "compositeScore": 37.5,
-  "compositeLabel": "A:筑底 B:Late",
+  "generated_at": "2026-07-01 22:42:20",
+  "compositeScore": 63.4,
+  "compositeLabel": "A:Growth B:Top",
   "moduleA": {
-    "score": 35.8,
-    "label": "筑底",
+    "score": 75.0,
+    "label": "Growth",
     "subIndicators": [
       {
         "key": "ai_demand",
         "name": "AI需求",
         "module": "A",
-        "score": 54.3,
-        "signal": "neutral",
-        "detail": "NVDA:21 Hype:73 News:8"
+        "score": 96.0,
+        "signal": "positive",
+        "detail": "CapEx新闻:0 模型新闻:5 企业AI:0 正1负0"
       },
       {
         "key": "semiconductor_capex",
         "name": "资本开支",
         "module": "A",
-        "score": 24.8,
-        "signal": "negative",
-        "detail": "Stocks:10 News:35(1)"
+        "score": 51.5,
+        "signal": "neutral",
+        "detail": "总1条 正0 负0"
       },
       {
         "key": "equipment_orders",
         "name": "设备订单",
         "module": "A",
-        "score": 27.5,
-        "signal": "negative",
-        "detail": "Stocks:24 News:30(2) Sector:0"
+        "score": 96.0,
+        "signal": "positive",
+        "detail": "总4条 正3 负0"
       },
       {
         "key": "profit_trend",
         "name": "盈利趋势",
         "module": "A",
-        "score": 50,
-        "signal": "neutral",
-        "detail": "3M avg:50 (0 stocks)"
+        "score": 76.5,
+        "signal": "positive",
+        "detail": "总14条 正3 负1"
       },
       {
         "key": "localization",
         "name": "国产替代",
         "module": "A",
-        "score": 21.5,
-        "signal": "negative",
-        "detail": "News:20(0) Stocks:24"
+        "score": 50,
+        "signal": "neutral",
+        "detail": "无相关新闻"
       }
     ]
   },
   "moduleB": {
-    "score": 41.6,
-    "label": "Late",
+    "score": 36.2,
+    "label": "Top",
     "subIndicators": [
       {
         "key": "valuation",
@@ -59,7 +59,7 @@
         "module": "B",
         "score": 50,
         "signal": "neutral",
-        "detail": "No PE data"
+        "detail": "暂无PE数据"
       },
       {
         "key": "capital_flow",
@@ -75,23 +75,23 @@
         "module": "B",
         "score": 10.0,
         "signal": "negative",
-        "detail": "Up:0/5 (0%)"
+        "detail": "涨:0/5 好财报下跌:0次 罚分:0"
       },
       {
         "key": "technical_trend",
         "name": "技术趋势",
         "module": "B",
-        "score": 50,
-        "signal": "neutral",
-        "detail": "MA:50 (0 tickers)"
+        "score": 35.0,
+        "signal": "negative",
+        "detail": "SOX/NVDA均值:35(1个指数)"
       },
       {
         "key": "market_sentiment",
         "name": "市场情绪",
         "module": "B",
-        "score": 48.2,
-        "signal": "neutral",
-        "detail": "Leaders:12% Sector:50% News:8"
+        "score": 36.2,
+        "signal": "negative",
+        "detail": "龙头涨跌比:12% 板块:50% 行情新闻:3"
       }
     ]
   }
