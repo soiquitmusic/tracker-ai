@@ -30,6 +30,8 @@
           <button id="btn-toggle-sidebar" class="btn icon-btn">☰</button>
           <span id="chat-title" class="chat-title">新对话</span>
           <select id="chat-profile-select" class="profile-select"></select>
+          <div id="skills-chips" class="skills-chips" style="display:flex;gap:3px;overflow-x:auto;flex:1;margin-left:6px;"></div>
+          <button id="btn-chat-skills" class="btn" title="加载 Skills">📋</button>
         </div>
         <div id="chat-messages" class="chat-messages">
           <div class="empty-hint">选择或新建一个对话开始</div>
@@ -184,7 +186,6 @@
       <div class="data-actions">
         <button id="btn-export" class="btn">导出全部数据</button>
         <button id="btn-import" class="btn">导入数据</button>
-        <button id="btn-import-skills" class="btn primary">同步 Skills 到档案</button>
         <button id="btn-clear-cache" class="btn">清除缓存并更新</button>
         <button id="btn-clear-all" class="btn danger">清空所有数据</button>
         <input id="import-file-input" type="file" accept=".json" style="display:none">
@@ -229,7 +230,7 @@
   <!-- 强制版本同步 -->
   <script>
   (function(){
-    var APP_VERSION = 75;
+    var APP_VERSION = 76;
     var stored = parseInt(localStorage.getItem('app_version') || '0');
     if (stored < APP_VERSION) {
       localStorage.setItem('app_version', APP_VERSION);

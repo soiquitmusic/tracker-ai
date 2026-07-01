@@ -18,6 +18,7 @@ export function initChat() {
   document.getElementById('btn-send').onclick = sendMessage;
   document.getElementById('btn-pick-image').onclick = () => document.getElementById('chat-file-input').click();
   document.getElementById('chat-file-input').onchange = onFileChange;
+  document.getElementById('btn-chat-skills').onclick = openSkillsPicker;
 
   const input = document.getElementById('chat-input');
   input.addEventListener('keydown', e => {
@@ -149,6 +150,7 @@ async function selectConversation(id) {
   await loadConversations();
   await renderMessages();
   enableInput(true);
+  renderActiveSkills();
 }
 
 // ---------- Messages ----------
@@ -188,6 +190,94 @@ function renderEmpty() {
   document.getElementById('chat-messages').innerHTML = '<div class="empty-hint">选择或新建一个对话开始</div>';
   document.getElementById('chat-title').textContent = '基金AI助手';
   enableInput(false);
+}
+
+// ---------- Skills ----------
+
+let _skillsCache = null; // 缓存的技能列表
+
+async function loadSkillsIndex() {
+  if (_skillsCache) return _skillsCache;
+  try {
+    const resp = await fetch('./data/skills/index.json', { signal: AbortSignal.timeout(5000) });
+    if (!resp.ok) return [];
+    const data = await resp.json();
+    _skillsCache = data.skills || [];
+    return _skillsCache;
+  } catch { return []; }
+}
+
+async function openSkillsPicker() {
+  if (!currentConvId) { toast('请先创建或选择一个对话'); return; }
+  const conv = await store.getConversation(currentConvId);
+  if (!conv) return;
+
+  const allSkills = await loadSkillsIndex();
+  if (!allSkills.length) { toast('暂无可用 Skills'); return; }
+
+  const activeSkills = conv.skills || [];
+  const items = allSkills.map(s => {
+    const active = activeSkills.includes(s.name);
+    return `<div class="fund-picker-item" data-skill="${s.name}" style="${active ? 'background:var(--primary-bg);border-color:var(--primary-light);' : ''}">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;">${s.name}</div>
+        <div style="font-size:11px;color:var(--text-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:300px;">${esc(s.description)}</div>
+      </div>
+      <span style="font-size:12px;color:${active ? 'var(--primary)' : 'var(--text-soft)'};">${active ? '✓ 已加载' : '点击加载'}</span>
+    </div>`;
+  }).join('');
+
+  showModal('加载 Skills', `<p style="font-size:12px;color:var(--text-soft);margin-bottom:8px;">点击切换当前对话加载的 Skills（注入到系统提示中）</p><div class="fund-picker-list" style="max-height:400px;">${items}</div>`, [
+    { text: '关闭', onClick: (_, c) => c() },
+  ]);
+
+  setTimeout(() => {
+    document.querySelectorAll('.fund-picker-item').forEach(el => {
+      el.onclick = async () => {
+        const skillName = el.dataset.skill;
+        const currentConv = await store.getConversation(currentConvId);
+        if (!currentConv) return;
+        let skills = currentConv.skills || [];
+        if (skills.includes(skillName)) {
+          skills = skills.filter(s => s !== skillName);
+        } else {
+          skills.push(skillName);
+        }
+        await store.updateConversation(currentConvId, { skills });
+        renderActiveSkills();
+        document.querySelector('.modal-mask')?.remove();
+        openSkillsPicker(); // 刷新弹窗
+      };
+    });
+  }, 100);
+}
+
+function renderActiveSkills() {
+  const chipsEl = document.getElementById('skills-chips');
+  if (!chipsEl) return;
+  if (!currentConvId) { chipsEl.innerHTML = ''; return; }
+
+  store.getConversation(currentConvId).then(conv => {
+    const skills = conv?.skills || [];
+    if (!skills.length) { chipsEl.innerHTML = ''; return; }
+    chipsEl.innerHTML = skills.map(s => `
+      <span style="display:inline-flex;align-items:center;gap:2px;font-size:10px;padding:2px 6px;background:#fef3c7;color:#92400e;border-radius:4px;white-space:nowrap;cursor:pointer;" title="点击移除 ${s}">
+        📋 ${esc(s)} <span style="font-size:12px;" data-remove-skill="${s}">×</span>
+      </span>
+    `).join('');
+    // 点击 × 移除
+    chipsEl.querySelectorAll('[data-remove-skill]').forEach(el => {
+      el.onclick = async e => {
+        e.stopPropagation();
+        const name = el.dataset.removeSkill;
+        const c = await store.getConversation(currentConvId);
+        if (c) {
+          await store.updateConversation(currentConvId, { skills: (c.skills || []).filter(s => s !== name) });
+          renderActiveSkills();
+        }
+      };
+    });
+  }).catch(() => {});
 }
 
 function scrollBottom() {
@@ -274,7 +364,7 @@ async function sendMessage() {
 
   // 构造消息
   const history = await store.getMessages(currentConvId);
-  const apiMsgs = buildApiMessages(history, profile);
+  const apiMsgs = await buildApiMessages(history, profile);
 
   // 流式调用
   let fullText = '';
@@ -317,7 +407,7 @@ async function sendMessage() {
   document.getElementById('chat-input').focus();
 }
 
-function buildApiMessages(history, profile) {
+async function buildApiMessages(history, profile) {
   const customPrompt = store.getSystemPrompt();
   const msgs = [];
 
@@ -329,7 +419,22 @@ function buildApiMessages(history, profile) {
     contextBlocks.push(customPrompt);
   }
 
-  // 四大技能框架
+  // 当前对话加载的 Skills
+  try {
+    const conv = await store.getConversation(currentConvId);
+    const loadedSkills = conv?.skills || [];
+    if (loadedSkills.length) {
+      const allSkills = await loadSkillsIndex();
+      for (const skillName of loadedSkills) {
+        const skill = allSkills.find(s => s.name === skillName);
+        if (skill && skill.systemPrompt) {
+          contextBlocks.push(`[Skill: ${skill.name}] ${skill.description}\n${skill.systemPrompt}`);
+        }
+      }
+    }
+  } catch {}
+
+  // 四大技能框架（默认加载）
   contextBlocks.push(`你是一位专业的中国公募基金投资顾问，具备以下四大分析框架：
 
 ## 1. 郑希投资方法论（zhengxi-views）

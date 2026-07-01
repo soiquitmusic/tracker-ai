@@ -354,6 +354,7 @@ export async function createConversation(title = '新对话', profileId = null) 
   const conv = {
     id: uuid(), title, profileId,
     includeHoldings: true,
+    skills: [], // 加载的 skill 名称列表
     createdAt: Date.now(), updatedAt: Date.now(),
   };
   const { store } = await tx('conversations', 'readwrite');

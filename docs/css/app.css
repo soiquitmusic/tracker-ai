@@ -1057,6 +1057,11 @@ input, textarea, select, button { font-family: inherit; font-size: 14px; }
   .empty-hint { font-size: 12px; padding: 20px; }
 }
 
+/* ===== Skills chips ===== */
+.skills-chips { display:flex;gap:3px;overflow-x:auto;flex:1;margin-left:6px; }
+.skills-chips::-webkit-scrollbar { height:2px; }
+.skills-chips::-webkit-scrollbar-thumb { background:#e2e8f0; border-radius:2px; }
+
 /* ===== 桌面适配 ===== */
 @media (min-width: 768px) {
   .chat-sidebar {
