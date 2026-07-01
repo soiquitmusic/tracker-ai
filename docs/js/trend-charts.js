@@ -13,7 +13,7 @@ const COLORS = {
 export function renderGauge(containerId, score, label) {
   const dom = document.getElementById(containerId);
   if (!dom) return;
-  const chart = echarts.init(dom);
+  const chart = window.echarts.init(dom);
   const option = {
     series: [{
       type: 'gauge',
@@ -60,7 +60,7 @@ export function renderGauge(containerId, score, label) {
 export function renderRadar(containerId, indicators, module) {
   const dom = document.getElementById(containerId);
   if (!dom || !indicators.length) return;
-  const chart = echarts.init(dom);
+  const chart = window.echarts.init(dom);
   const indicator = indicators.map(i => ({ name: i.name, max: 100 }));
   const data = indicators.map(i => i.score);
   const option = {
@@ -89,7 +89,7 @@ export function renderRadar(containerId, indicators, module) {
 export function renderTrendLine(containerId, history) {
   const dom = document.getElementById(containerId);
   if (!dom || !history || !history.length) return;
-  const chart = echarts.init(dom);
+  const chart = window.echarts.init(dom);
   const dates = history.map(h => h.date.slice(5));
   const option = {
     tooltip: { trigger: 'axis' },
@@ -133,7 +133,7 @@ export function renderTrendLine(containerId, history) {
 export function renderIndicatorBars(containerId, indicators, moduleColor) {
   const dom = document.getElementById(containerId);
   if (!dom || !indicators.length) return;
-  const chart = echarts.init(dom);
+  const chart = window.echarts.init(dom);
   const sorted = [...indicators].sort((a, b) => b.score - a.score);
   const option = {
     tooltip: {
