@@ -12,7 +12,6 @@ export function initSettings(el) {
   document.getElementById('btn-export').onclick = doExport;
   document.getElementById('btn-import').onclick = () => document.getElementById('import-file-input').click();
   document.getElementById('import-file-input').onchange = doImport;
-  document.getElementById('btn-import-skills').onclick = importSkills;
   document.getElementById('btn-clear-all').onclick = doClear;
   document.getElementById('btn-clear-cache').onclick = doClearCache;
 
@@ -297,43 +296,6 @@ function openGroupFundPicker(groupId) {
       };
     });
   }, 100);
-}
-
-async function importSkills() {
-  toast('加载技能列表中…', 5000);
-  try {
-    const resp = await fetch('./data/skills/index.json', { signal: AbortSignal.timeout(5000) });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const data = await resp.json();
-    if (!data.skills || !data.skills.length) { toast('没有找到 Skills'); return; }
-
-    let imported = 0;
-    const existing = store.getProfiles();
-    const existingNames = new Set(existing.map(p => p.name));
-
-    for (const skill of data.skills) {
-      if (!skill.userInvocable) continue;
-      if (existingNames.has(skill.name)) continue; // skip duplicates
-
-      store.saveProfile({
-        name: skill.name,
-        provider: 'gemini',  // default provider, user can change
-        base_url: 'https://generativelanguage.googleapis.com',
-        model: 'gemini-2.5-flash',
-        api_key: '',
-        systemPrompt: skill.systemPrompt || '',
-        is_default: false,
-        skill: true, // mark as skill-imported
-      });
-      imported++;
-    }
-
-    renderProfiles();
-    window.dispatchEvent(new Event('profiles-changed'));
-    toast(`导入完成: ${imported} 个 (跳过 ${data.skills.length - imported - (data.skills.filter(s => !s.userInvocable).length)} 个重复)`);
-  } catch (e) {
-    toast('导入失败: ' + e.message);
-  }
 }
 
 function esc(s) {
