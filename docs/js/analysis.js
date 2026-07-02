@@ -385,14 +385,14 @@ function inferCategory(name, type) {
   return '其他';
 }
 
-// 轻量获取某基金的持仓股票代码（仅用于重合度对比）
+// 轻量获取某基金的持仓股票代码+名称
 async function fetchFundStockCodes(code) {
   try {
     const resp = await fetch(`https://j5.dfcfw.com/sc/tfs/qt/v2.0.1/${code}.json`);
     if (!resp.ok) return [];
     const data = await resp.json();
     const stocks = data?.JJCCNEW?.data?.InverstPosition?.fundStocks || [];
-    return stocks.slice(0, 10).map(s => s.GPDM || '').filter(Boolean);
+    return stocks.slice(0, 10).map(s => ({ code: s.GPDM || '', name: s.GPJC || '' })).filter(s => s.code);
   } catch { return []; }
 }
 
@@ -415,13 +415,15 @@ async function calculatePortfolioOverlap(fundData) {
     stockOverlap: [],  // 重合的股票代码
   };
 
-  // 本基金的前十重仓股代码
+  // 本基金的前十重仓股 {code, name}
+  const myStocks = [];
   const myStockCodes = new Set();
+  const myStockNames = {};
   try {
-    const codes = await fetchFundStockCodes(fundData.code);
-    codes.forEach(c => myStockCodes.add(c));
+    const stocks = await fetchFundStockCodes(fundData.code);
+    stocks.forEach(s => { myStocks.push(s); myStockCodes.add(s.code); myStockNames[s.code] = s.name; });
   } catch { /* ignore */ }
-  debug.push(`本基金持仓股代码: ${[...myStockCodes].join(',') || '(空)'}`);
+  debug.push(`本基金持仓股: ${myStocks.map(s => s.name + '(' + s.code + ')').join(', ') || '(空)'}`);
 
   // 从重仓股推断赛道（用于兜底）
   const targetSectors = detectSectorFromHoldings(fundData.topHoldings) || [];
@@ -430,14 +432,14 @@ async function calculatePortfolioOverlap(fundData) {
 
   let totalMV = 0;
   let overlapMV = 0;
-  const sharedStocks = new Set();
+  const sharedStocks = new Map(); // code → {name, funds: []}
 
-  // 并发获取用户所有持仓基金的重仓股（限5只）
+  // 并发获取用户所有持仓基金的重仓股
   const userCodes = holdings.filter(h => h.code && h.code !== fundData.code).slice(0, 8);
   const userHoldingsData = await Promise.all(
     userCodes.map(async (h) => {
-      const stocks = await fetchFundStockCodes(h.code);
-      return { code: h.code, name: h.name, stocks, mv: parseFloat(h.market_value) || parseFloat(h.cost) || 0 };
+      const stockList = await fetchFundStockCodes(h.code);
+      return { code: h.code, name: h.name, stocks: stockList, mv: parseFloat(h.market_value) || parseFloat(h.cost) || 0 };
     })
   );
 
@@ -448,7 +450,7 @@ async function calculatePortfolioOverlap(fundData) {
 
     if (h.code === fundData.code) {
       result.sameSector.push({ code: h.code, name: h.name, reason: '本基金自身', stockOverlap: 0 });
-      continue; // 不纳入重合度计算
+      continue;
     }
 
     const userData = userHoldingsData.find(d => d.code === h.code);
@@ -456,9 +458,18 @@ async function calculatePortfolioOverlap(fundData) {
 
     // 方式1：股票代码级别重合
     let stockMatch = 0;
+    const matchedCodes = [];
     if (userData && userData.stocks.length > 0 && myStockCodes.size > 0) {
       for (const sc of userData.stocks) {
-        if (myStockCodes.has(sc)) { stockMatch++; sharedStocks.add(sc); }
+        if (myStockCodes.has(sc.code)) {
+          stockMatch++;
+          matchedCodes.push(sc.code);
+          if (!sharedStocks.has(sc.code)) {
+            sharedStocks.set(sc.code, { name: myStockNames[sc.code] || sc.name || sc.code, funds: [] });
+          }
+          const entry = sharedStocks.get(sc.code);
+          if (!entry.funds.includes(h.name)) entry.funds.push(h.name);
+        }
       }
     }
 
@@ -488,22 +499,25 @@ async function calculatePortfolioOverlap(fundData) {
     }
   }
 
-  result.stockOverlap = [...sharedStocks];
+  result.stockOverlap = [...sharedStocks.keys()];
+  result.sharedStockDetails = [...sharedStocks.entries()].map(([code, info]) => ({
+    code, name: info.name, funds: info.funds,
+  }));
   result.totalHoldingValue = totalMV;
-  // 重合度 = 加权重合金额 / 总金额（不含自身）
   const selfMV = parseFloat(holdings.find(h => h.code === fundData.code)?.market_value) || parseFloat(holdings.find(h => h.code === fundData.code)?.cost) || 0;
   const totalExSelf = totalMV - selfMV;
   result.overlapRatio = totalExSelf > 0 ? +(overlapMV / totalExSelf * 100).toFixed(1) : 0;
-  result.concentrationRisk = result.overlapRatio > 30;
-  // 统计各基金股票重合数
-  const stockMatchSummary = result.sameSector
-    .filter(f => f.stockOverlap > 0)
-    .map(f => `${f.code}:${f.stockOverlap}/10`)
-    .join(', ');
-  debug.push(`共同持股代码: ${sharedStocks.size > 0 ? [...sharedStocks].join(',') : '无'}`);
-  debug.push(`各基金股票重合: ${stockMatchSummary || '无'}`);
-  const finalResult = result.sameSector.filter(f => f.stockOverlap > 0 || f.reason !== '本基金自身').length > 0 ? result : null;
-  debug.push(`结果: ${finalResult ? '重合度 '+result.overlapRatio+'%' : '无重合'}`);
+  // 详细调试
+  if (sharedStocks.size > 0) {
+    debug.push(`共同持股详情:`);
+    for (const [code, info] of sharedStocks) {
+      debug.push(`  ${info.name}(${code}) → ${info.funds.join('、')}`);
+    }
+  } else {
+    debug.push('无共同持股');
+  }
+  const finalResult = sharedStocks.size > 0 ? result : null;
+  debug.push(`结果: ${finalResult ? '发现 '+sharedStocks.size+' 支共同持股' : '无重合'}`);
   return { result: finalResult, debug };
 }
 
@@ -579,19 +593,18 @@ function buildOverlapHTML(overlap, fundData, debug) {
     </div>`;
   }
 
-  const stockInfo = overlap.stockOverlap && overlap.stockOverlap.length > 0
-    ? `<div style="margin-top:6px;font-size:11px;color:var(--text-soft);">共同持股代码: ${overlap.stockOverlap.map(c => esc(c)).join(', ')}</div>`
+  const stockInfo = overlap.sharedStockDetails && overlap.sharedStockDetails.length > 0
+    ? `<div style="margin-top:6px;font-size:11px;color:var(--text-soft);">共同持股: ${overlap.sharedStockDetails.map(d => `${d.name}(${esc(d.code)})`).join(', ')}</div>`
     : '';
 
   const items = overlap.sameSector.slice(0, 8);
   const more = overlap.sameSector.length > 8 ? ` +${overlap.sameSector.length - 8} 只` : '';
 
   let riskBadge = '';
-  if (overlap.stockOverlap && overlap.stockOverlap.length > 1) {
-    const n = overlap.stockOverlap.length;
-    const penalty = Math.min(n - 1, 5);
+  if (overlap.sharedStockDetails && overlap.sharedStockDetails.length > 0) {
+    const details = overlap.sharedStockDetails.map(d => `${d.name}（${esc(d.code)}）`).join('、');
     riskBadge = `<div style="margin-top:8px;padding:8px 12px;background:#fef3c7;border-radius:8px;font-size:12px;color:#92400e;">
-      ⚠️ 持仓重合预警：本基金与用户现有持仓有 <b>${n} 支</b>共同持股。综合评分已扣除 <b>${penalty}</b> 分。
+      ⚠️ 持仓重合提醒：本基金与用户其他持仓有以下共同持股：<b>${details}</b>（共 ${overlap.stockOverlap.length} 支）
     </div>`;
   }
 
@@ -678,24 +691,14 @@ function computeScores(fundData, overlap) {
   // 综合评分
   let composite = +(scoreQuant * 0.35 + scoreQual * 0.30 + scoreZx * 0.35).toFixed(1);
 
-  // 持仓重合度修正：按共同持股数扣分
-  let overlapPenalty = 0;
-  if (overlap && overlap.stockOverlap && overlap.stockOverlap.length > 1) {
-    const n = overlap.stockOverlap.length;
-    // 2支→-1, 3支→-2, 4支→-3, 5支→-4, 6支+→-5
-    overlapPenalty = Math.min(n - 1, 5);
-    composite = +(composite - overlapPenalty).toFixed(1);
-    composite = Math.max(1.0, composite);
-  }
-
-  // 操作建议
+  // 操作建议（持仓重合不参与计算，仅额外提醒）
   let action, actionLabel, actionColor;
   if (composite >= 4.0) { action = '加仓'; actionLabel = '强烈推荐/重仓持有'; actionColor = 'green'; }
   else if (composite >= 3.0) { action = '持有'; actionLabel = '推荐持有/适度配置'; actionColor = 'blue'; }
   else if (composite >= 2.0) { action = '减仓'; actionLabel = '谨慎持有/考虑减持'; actionColor = 'yellow'; }
   else { action = '清仓'; actionLabel = '建议清仓/回避'; actionColor = 'red'; }
 
-  return { scoreQuant, scoreQual, scoreZx, composite, calmar, action, actionLabel, actionColor, overlapPenalty };
+  return { scoreQuant, scoreQual, scoreZx, composite, calmar, action, actionLabel, actionColor };
 }
 
 // ---------- 开始分析 ----------
