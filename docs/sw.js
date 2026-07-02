@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fund-ai-v56';
+const CACHE_NAME = 'fund-ai-v57';
 const ASSETS = [
   './',
   './index.html',
