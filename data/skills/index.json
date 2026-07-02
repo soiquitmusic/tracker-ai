@@ -1,0 +1,47 @@
+{
+  "count": 6,
+  "skills": [
+    {
+      "name": "investool-fund",
+      "description": "中国公募基金全市场筛选与深度分析工具——4433法则筛选、自定义基金严选、基金经理筛选、单基金深度分析、持仓相似度、股票选基、持仓基本面检查",
+      "category": "investool-fund",
+      "userInvocable": true,
+      "systemPrompt": "中国公募基金全市场筛选与深度分析工具"
+    },
+    {
+      "name": "mutual-fund-skills",
+      "description": "中国公募基金全市场筛选与深度分析工具，支持夏普/索提诺/卡玛等量化指标筛选",
+      "category": "mutual-fund-skills",
+      "userInvocable": true,
+      "systemPrompt": "中国公募基金全市场筛选与深度分析工具"
+    },
+    {
+      "name": "fund-manager-eval",
+      "description": "基金经理深度评价框架——对任意基金经理进行5维度+3框架量化评分，输出星级评价和调仓建议",
+      "category": "fund-manager-eval",
+      "userInvocable": true,
+      "systemPrompt": "基金经理深度评价框架"
+    },
+    {
+      "name": "zhengxi-views",
+      "description": "郑希观点库——基于易方达基金经理郑希2012-2026年全部公开观点原文语料的可溯源research skill",
+      "category": "zhengxi-views",
+      "userInvocable": true,
+      "systemPrompt": "郑希观点库"
+    },
+    {
+      "name": "portfolio-deep-diagnosis",
+      "description": "基金组合深度诊断——穿透底层股票/宏观场景压力测试/费率优化/主动vs被动超额分解/行为匹配度分析",
+      "category": "portfolio-deep-diagnosis",
+      "userInvocable": true,
+      "systemPrompt": "基金组合深度诊断"
+    },
+    {
+      "name": "fund-strategy-backtest",
+      "description": "基金投资策略回测框架——定投/止盈/补仓/MACD信号策略的量化回测引擎设计与公式参考",
+      "category": "fund-strategy-backtest",
+      "userInvocable": true,
+      "systemPrompt": "基金投资策略回测框架"
+    }
+  ]
+}

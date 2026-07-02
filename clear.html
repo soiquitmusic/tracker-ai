@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>清理缓存</title></head>
+<body style="font-family:sans-serif;padding:40px 20px;text-align:center;">
+<h2>正在清理缓存...</h2>
+<p id="status">请稍候</p>
+<script>
+(async function(){
+  const s = document.getElementById('status');
+  try {
+    // 注销所有 Service Worker
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const r of regs) { await r.unregister(); }
+      s.textContent = '已注销 ' + regs.length + ' 个 Service Worker';
+    }
+    // 清空所有缓存
+    const keys = await caches.keys();
+    for (const k of keys) { await caches.delete(k); }
+    // 清 localStorage 版本号
+    localStorage.removeItem('app_version');
+    s.textContent = '清理完成！3秒后跳转...';
+    setTimeout(function(){ window.location.href = './index.html'; }, 3000);
+  } catch(e) {
+    s.textContent = '清理出错: ' + e.message;
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+{
+  "date": "2026-07-01",
+  "generated_at": "2026-07-01 22:42:20",
+  "compositeScore": 63.4,
+  "compositeLabel": "A:Growth B:Top",
+  "moduleA": {
+    "score": 75.0,
+    "label": "Growth",
+    "subIndicators": [
+      {
+        "key": "ai_demand",
+        "name": "AI需求",
+        "module": "A",
+        "score": 96.0,
+        "signal": "positive",
+        "detail": "CapEx新闻:0 模型新闻:5 企业AI:0 正1负0"
+      },
+      {
+        "key": "semiconductor_capex",
+        "name": "资本开支",
+        "module": "A",
+        "score": 51.5,
+        "signal": "neutral",
+        "detail": "总1条 正0 负0"
+      },
+      {
+        "key": "equipment_orders",
+        "name": "设备订单",
+        "module": "A",
+        "score": 96.0,
+        "signal": "positive",
+        "detail": "总4条 正3 负0"
+      },
+      {
+        "key": "profit_trend",
+        "name": "盈利趋势",
+        "module": "A",
+        "score": 76.5,
+        "signal": "positive",
+        "detail": "总14条 正3 负1"
+      },
+      {
+        "key": "localization",
+        "name": "国产替代",
+        "module": "A",
+        "score": 50,
+        "signal": "neutral",
+        "detail": "无相关新闻"
+      }
+    ]
+  },
+  "moduleB": {
+    "score": 36.2,
+    "label": "Top",
+    "subIndicators": [
+      {
+        "key": "valuation",
+        "name": "估值水平",
+        "module": "B",
+        "score": 50,
+        "signal": "neutral",
+        "detail": "暂无PE数据"
+      },
+      {
+        "key": "capital_flow",
+        "name": "资金流向",
+        "module": "B",
+        "score": 50,
+        "signal": "neutral",
+        "detail": "暂无数据"
+      },
+      {
+        "key": "earnings_reaction",
+        "name": "财报反应",
+        "module": "B",
+        "score": 10.0,
+        "signal": "negative",
+        "detail": "涨:0/5 好财报下跌:0次 罚分:0"
+      },
+      {
+        "key": "technical_trend",
+        "name": "技术趋势",
+        "module": "B",
+        "score": 35.0,
+        "signal": "negative",
+        "detail": "SOX/NVDA均值:35(1个指数)"
+      },
+      {
+        "key": "market_sentiment",
+        "name": "市场情绪",
+        "module": "B",
+        "score": 36.2,
+        "signal": "negative",
+        "detail": "龙头涨跌比:12% 板块:50% 行情新闻:3"
+      }
+    ]
+  }
+}

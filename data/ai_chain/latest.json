@@ -1,0 +1,205 @@
+{
+  "date": "2026-07-01",
+  "generatedAt": "2026-07-01 22:33:31",
+  "modules": [
+    {
+      "key": "ai_demand",
+      "name": "AI 需求",
+      "parent": "",
+      "industryScore": 65.7,
+      "marketScore": 56.9,
+      "rotationScore": 8.8,
+      "industrySignal": "positive",
+      "marketSignal": "neutral",
+      "detail": "NVDA:27 Hyp:89 News:10"
+    },
+    {
+      "key": "gpu",
+      "name": "GPU",
+      "parent": "",
+      "industryScore": 23.4,
+      "marketScore": 41.9,
+      "rotationScore": -18.5,
+      "industrySignal": "negative",
+      "marketSignal": "neutral",
+      "detail": "NVDA:27 AMD:8 News:1"
+    },
+    {
+      "key": "asic",
+      "name": "ASIC",
+      "parent": "",
+      "industryScore": 24.1,
+      "marketScore": 41.9,
+      "rotationScore": -17.8,
+      "industrySignal": "negative",
+      "marketSignal": "neutral",
+      "detail": "AVGO:34 MRVL:5 News:0"
+    },
+    {
+      "key": "hbm",
+      "name": "HBM",
+      "parent": "",
+      "industryScore": 0,
+      "marketScore": 31.3,
+      "rotationScore": -31.3,
+      "industrySignal": "negative",
+      "marketSignal": "negative",
+      "detail": "MU:-20 News:0"
+    },
+    {
+      "key": "equipment",
+      "name": "半导体设备",
+      "parent": "",
+      "industryScore": 8.1,
+      "marketScore": 31.4,
+      "rotationScore": -23.3,
+      "industrySignal": "negative",
+      "marketSignal": "negative",
+      "detail": ""
+    },
+    {
+      "key": "materials",
+      "name": "半导体材料",
+      "parent": "",
+      "industryScore": 14.2,
+      "marketScore": 32.7,
+      "rotationScore": -18.5,
+      "industrySignal": "negative",
+      "marketSignal": "negative",
+      "detail": "Stocks:-2 News:0"
+    },
+    {
+      "key": "eda",
+      "name": "EDA / IP",
+      "parent": "",
+      "industryScore": 82.7,
+      "marketScore": 56.6,
+      "rotationScore": 26.1,
+      "industrySignal": "positive",
+      "marketSignal": "neutral",
+      "detail": "SNPS:86 CDNS:63 News:8"
+    },
+    {
+      "key": "pcb",
+      "name": "PCB",
+      "parent": "",
+      "industryScore": 22.1,
+      "marketScore": 38.5,
+      "rotationScore": -16.3,
+      "industrySignal": "negative",
+      "marketSignal": "negative",
+      "detail": "TSM:15 News:0"
+    },
+    {
+      "key": "optics",
+      "name": "光模块",
+      "parent": "",
+      "industryScore": 19.9,
+      "marketScore": 40.9,
+      "rotationScore": -21.0,
+      "industrySignal": "negative",
+      "marketSignal": "neutral",
+      "detail": "Stocks:20 News:0"
+    },
+    {
+      "key": "cooling",
+      "name": "液冷",
+      "parent": "",
+      "industryScore": 36.6,
+      "marketScore": 54.5,
+      "rotationScore": -18.0,
+      "industrySignal": "negative",
+      "marketSignal": "neutral",
+      "detail": "Stocks:64 News:0"
+    },
+    {
+      "key": "idc",
+      "name": "IDC",
+      "parent": "",
+      "industryScore": 50.2,
+      "marketScore": 51.6,
+      "rotationScore": -1.4,
+      "industrySignal": "neutral",
+      "marketSignal": "neutral",
+      "detail": "Hyperscaler:61 News:3"
+    },
+    {
+      "key": "power",
+      "name": "电力基础设施",
+      "parent": "",
+      "industryScore": 57.6,
+      "marketScore": 54.5,
+      "rotationScore": 3.0,
+      "industrySignal": "neutral",
+      "marketSignal": "neutral",
+      "detail": "Stocks:64 News:5"
+    },
+    {
+      "key": "foundation",
+      "name": "基础模型",
+      "parent": "",
+      "industryScore": 50.8,
+      "marketScore": 60.7,
+      "rotationScore": -9.9,
+      "industrySignal": "neutral",
+      "marketSignal": "positive",
+      "detail": "Stocks:90 News:2"
+    },
+    {
+      "key": "agent",
+      "name": "AI Agent",
+      "parent": "",
+      "industryScore": 42.0,
+      "marketScore": 60.6,
+      "rotationScore": -18.6,
+      "industrySignal": "neutral",
+      "marketSignal": "positive",
+      "detail": "Stocks:82 News:0"
+    },
+    {
+      "key": "enterprise",
+      "name": "企业AI",
+      "parent": "",
+      "industryScore": 37.7,
+      "marketScore": 55.8,
+      "rotationScore": -18.1,
+      "industrySignal": "negative",
+      "marketSignal": "neutral",
+      "detail": "Stocks:67 News:0"
+    },
+    {
+      "key": "apps",
+      "name": "AI 应用",
+      "parent": "",
+      "industryScore": 36.4,
+      "marketScore": 60.8,
+      "rotationScore": -24.4,
+      "industrySignal": "negative",
+      "marketSignal": "positive",
+      "detail": "Stocks:82 News:0"
+    }
+  ],
+  "rankings": {
+    "topIndustry": [
+      "eda",
+      "ai_demand",
+      "power",
+      "foundation",
+      "idc"
+    ],
+    "topRotation": [
+      "eda",
+      "ai_demand",
+      "power",
+      "idc",
+      "foundation"
+    ],
+    "bottomRotation": [
+      "agent",
+      "optics",
+      "equipment",
+      "apps",
+      "hbm"
+    ]
+  }
+}
