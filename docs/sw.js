@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fund-ai-v57';
+const CACHE_NAME = 'fund-ai-v58';
 const ASSETS = [
   './',
   './index.html',
@@ -10,8 +10,6 @@ const ASSETS = [
   './js/holdings.js',
   './js/overview.js',
   './js/compare.js',
-  './js/qdii.js',
-  './js/briefing.js',
   './js/settings.js',
   './js/utils.js',
   './icons/icon-192.png',
