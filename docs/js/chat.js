@@ -2,7 +2,7 @@
 
 import * as store from './store.js';
 import { streamChat } from './providers.js';
-import { renderMarkdown, fileToBase64, compressImage, formatTime, toast } from './utils.js';
+import { renderMarkdown, fileToBase64, compressImage, formatTime, toast, showModal } from './utils.js';
 
 const DEFAULT_SYSTEM_PROMPT = '';
 
