@@ -45,6 +45,8 @@ export function initAnalysis(containerEl) {
   };
 
   startBtn.onclick = () => startAnalysis();
+  const allBtn = document.getElementById('btn-analysis-all');
+  if (allBtn) allBtn.onclick = () => startAnalysisAll();
   pickBtn.onclick = () => openHoldingsPicker();
   clearSelBtn.onclick = () => clearSelection();
   clearHistoryBtn.onclick = () => clearHistory();
@@ -585,9 +587,11 @@ function buildOverlapHTML(overlap, fundData, debug) {
   const more = overlap.sameSector.length > 8 ? ` +${overlap.sameSector.length - 8} 只` : '';
 
   let riskBadge = '';
-  if (overlap.concentrationRisk) {
+  if (overlap.stockOverlap && overlap.stockOverlap.length > 1) {
+    const n = overlap.stockOverlap.length;
+    const penalty = Math.min(n - 1, 5);
     riskBadge = `<div style="margin-top:8px;padding:8px 12px;background:#fef3c7;border-radius:8px;font-size:12px;color:#92400e;">
-      ⚠️ 集中度风险：你的持仓中 ${overlap.overlapRatio}% 已投向相同赛道。综合评分已扣除 ${overlap.overlapRatio > 30 ? '+' + (overlap.overlapRatio/100*2).toFixed(1) : '0'} 分。
+      ⚠️ 持仓重合预警：本基金与用户现有持仓有 <b>${n} 支</b>共同持股。综合评分已扣除 <b>${penalty}</b> 分。
     </div>`;
   }
 
@@ -674,10 +678,12 @@ function computeScores(fundData, overlap) {
   // 综合评分
   let composite = +(scoreQuant * 0.35 + scoreQual * 0.30 + scoreZx * 0.35).toFixed(1);
 
-  // 持仓重合度修正：高重合度降低综合评分（集中度风险）
+  // 持仓重合度修正：按共同持股数扣分
   let overlapPenalty = 0;
-  if (overlap && overlap.concentrationRisk) {
-    overlapPenalty = Math.min(1.0, +(overlap.overlapRatio / 100 * 2).toFixed(1));
+  if (overlap && overlap.stockOverlap && overlap.stockOverlap.length > 1) {
+    const n = overlap.stockOverlap.length;
+    // 2支→-1, 3支→-2, 4支→-3, 5支→-4, 6支+→-5
+    overlapPenalty = Math.min(n - 1, 5);
     composite = +(composite - overlapPenalty).toFixed(1);
     composite = Math.max(1.0, composite);
   }
@@ -753,6 +759,75 @@ async function startAnalysis() {
     startBtn.textContent = '开始分析';
     abortController = null;
   }
+}
+
+// ---------- 全部分析 ----------
+
+let _allAnalysisAborted = false;
+
+async function startAnalysisAll() {
+  const holdings = store.getHoldings() || [];
+  const followList = store.getFollowList() || [];
+  const fundMap = new Map();
+  holdings.forEach(h => { if (h.code) fundMap.set(h.code, h); });
+  followList.forEach(p => { (p.items || []).forEach(item => { if (item.code) fundMap.set(item.code, item); }); });
+  const funds = Array.from(fundMap.values());
+
+  if (funds.length === 0) { toast('暂未添加持仓'); return; }
+
+  // 清空旧历史（全部分析采用覆盖模式）
+  analysisHistory = [];
+  localStorage.removeItem('analysisHistory');
+  renderHistory();
+
+  _allAnalysisAborted = false;
+  const allBtn = document.getElementById('btn-analysis-all');
+  const origText = allBtn.textContent;
+  allBtn.disabled = true;
+
+  const resultsEl = document.getElementById('analysis-results');
+  resultsEl.innerHTML = `<div class="analysis-loading"><div class="analysis-spinner"></div><span>全部分析中 (0/${funds.length})…</span></div>`;
+
+  let completed = 0;
+  for (const fund of funds) {
+    if (_allAnalysisAborted) break;
+    resultsEl.innerHTML = `<div class="analysis-loading"><div class="analysis-spinner"></div><span>全部分析中 (${completed}/${funds.length})… ${esc(fund.name)}</span></div>`;
+
+    // 临时选中
+    selectedFund = fund;
+    try {
+      const fundData = await fetchFundData(fund.code);
+      if (fundData) {
+        const overlapData = await calculatePortfolioOverlap(fundData);
+        lastOverlap = overlapData.result;
+        const scores = computeScores(fundData, lastOverlap);
+        // 覆盖模式：保存到历史（覆盖旧记录）
+        saveToHistory(fundData, scores, '', true);
+      }
+    } catch (e) {
+      console.warn(`分析 ${fund.code} 失败:`, e);
+    }
+    completed++;
+  }
+
+  // 展示结果
+  loadHistory();
+  renderHistory();
+
+  resultsEl.innerHTML = `
+    <div class="analysis-verdict blue-border" style="padding:16px;">
+      <div class="verdict-label">全部分析完成</div>
+      <div class="verdict-score-wrap">
+        <span class="verdict-score" style="font-size:28px;">${completed}</span>
+        <span class="verdict-max">/ ${funds.length} 只</span>
+      </div>
+      <div class="verdict-explain">${_allAnalysisAborted ? '已中断' : '分析完成，点击上方历史记录查看详情'}</div>
+    </div>
+  `;
+
+  allBtn.disabled = false;
+  allBtn.textContent = origText;
+  selectedFund = null;
 }
 
 // ---------- 渲染 ----------
@@ -1170,11 +1245,16 @@ function loadHistory() {
   }
 }
 
-function saveToHistory(fundData, scores, aiText) {
+function saveToHistory(fundData, scores, aiText, overwrite) {
   loadHistory();
   const today = new Date().toISOString().slice(0, 10);
-  // 去重同一天同一基金；如果有AI文本则更新
-  const existing = analysisHistory.find(h => h.code === fundData.code && h.date === today);
+  // overwrite 模式：覆盖该基金的旧记录（全部分析用）
+  let existing;
+  if (overwrite) {
+    existing = analysisHistory.find(h => h.code === fundData.code);
+  } else {
+    existing = analysisHistory.find(h => h.code === fundData.code && h.date === today);
+  }
   if (existing) {
     if (aiText) existing.aiText = aiText;
     existing.scores = {
@@ -1226,7 +1306,7 @@ function renderHistory() {
     return;
   }
 
-  el.innerHTML = sorted.map(h => {
+  el.innerHTML = sorted.map((h, idx) => {
     const d = new Date(h.timestamp);
     const dateStr = `${d.getFullYear()}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
     const actionColor = h.scores?.actionColor || 'blue';
@@ -1240,6 +1320,7 @@ function renderHistory() {
         <div class="analysis-history-head">
           <span class="analysis-history-name">${esc(h.name)}${hasAI ? ' 🤖' : ''}</span>
           <span class="analysis-history-date">${dateStr}</span>
+          <button class="btn danger" style="font-size:10px;padding:2px 6px;margin-left:auto;" data-del-history="${idx}">删除</button>
         </div>
         <div class="analysis-history-row">
           <span>YTD ${ytdStr}</span><span class="his-dot"></span>
@@ -1252,14 +1333,26 @@ function renderHistory() {
     `;
   }).join('');
 
+  // 单条删除
+  el.querySelectorAll('[data-del-history]').forEach(btn => {
+    btn.onclick = e => {
+      e.stopPropagation();
+      const idx = parseInt(btn.dataset.delHistory);
+      if (confirm('确认删除此条分析记录？')) {
+        analysisHistory.splice(idx, 1);
+        localStorage.setItem('analysisHistory', JSON.stringify(analysisHistory));
+        renderHistory();
+        toast('已删除');
+      }
+    };
+  });
+
   // 点击历史项重新分析
   el.querySelectorAll('.analysis-history-item').forEach(item => {
-    item.onclick = () => {
+    item.onclick = (e) => {
+      if (e.target.closest('[data-del-history]')) return;
       selectFund({ code: item.dataset.code, name: item.dataset.name });
-
-      // 滚动到顶部
       document.getElementById('analysis-results').scrollIntoView({ behavior: 'smooth' });
-
       startAnalysis();
     };
   });

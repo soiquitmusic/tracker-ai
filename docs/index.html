@@ -124,6 +124,7 @@
         style="font-size:13px;padding:8px 14px;white-space:nowrap;flex-shrink:0;min-width:44px;min-height:44px;">搜索</button>
       <span class="analysis-shortcut-chip" id="btn-pick-holdings">📋</span>
       <button id="btn-analysis-start" class="btn primary" disabled type="button" style="font-size:12px;padding:6px 10px;white-space:nowrap;">分析</button>
+      <button id="btn-analysis-all" class="btn" type="button" style="font-size:12px;padding:6px 10px;white-space:nowrap;">📋 全部分析</button>
     </div>
     <!-- 选中基金 -->
     <div id="analysis-selected-card" class="analysis-selected-card" style="display:none;">
@@ -230,7 +231,7 @@
   <!-- 强制版本同步 -->
   <script>
   (function(){
-    var APP_VERSION = 77;
+    var APP_VERSION = 78;
     var stored = parseInt(localStorage.getItem('app_version') || '0');
     if (stored < APP_VERSION) {
       localStorage.setItem('app_version', APP_VERSION);
