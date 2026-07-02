@@ -34,7 +34,8 @@ initOverview(document.getElementById('page-overview'));
 initAnalysis();
 initSettings(document.getElementById('page-settings'));
 
-// 恢复上次 Tab（兼容旧值 briefing/qdii -> analysis）
+// 恢复上次 Tab（兼容旧值迁移）
 let savedTab = localStorage.getItem('activeTab') || 'chat';
 if (savedTab === 'briefing' || savedTab === 'qdii') savedTab = 'analysis';
+if (savedTab === 'trend') savedTab = 'chat';
 switchTab(savedTab);
