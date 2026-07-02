@@ -1,5 +1,15 @@
 // ===== app.js — 入口 =====
 
+// 强制清除旧 Service Worker（避免缓存干扰）
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  });
+}
+navigator.serviceWorker?.addEventListener('message', e => {
+  if (e.data?.type === 'SW_UPDATED') window.location.reload();
+});
+
 import { initChat, refreshProfileSelect } from './chat.js';
 import { initHoldings } from './holdings.js';
 import { initOverview, onOverviewVisible, onOverviewHidden } from './overview.js';
