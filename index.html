@@ -228,32 +228,17 @@
   <!-- 通用模态框容器 -->
   <div id="modal-root"></div>
 
-  <!-- 强制版本同步 -->
+  <!-- SW killer: 强制清除所有 Service Worker 和缓存 -->
   <script>
-  (function(){
-    var APP_VERSION = 85;
-    var stored = parseInt(localStorage.getItem('app_version') || '0');
-    if (stored < APP_VERSION) {
-      localStorage.setItem('app_version', APP_VERSION);
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(regs) {
-          regs.forEach(function(r) { r.unregister(); });
-          caches.keys().then(function(keys) {
-            Promise.all(keys.map(function(k) { return caches.delete(k); })).then(function() {
-              window.location.reload();
-            });
-          });
-        });
-      } else {
-        window.location.reload();
-      }
-      return;
-    }
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').catch(function(){});
-    }
-  })();
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      regs.forEach(function(r) { r.unregister(); });
+    });
+    caches.keys().then(function(keys) {
+      keys.forEach(function(k) { caches.delete(k); });
+    });
+  }
   </script>
-  <script type="module" src="js/app.js?v=85"></script>
+  <script type="module" src="js/app.js?v=86"></script>
 </body>
 </html>
