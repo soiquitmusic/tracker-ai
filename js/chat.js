@@ -2,7 +2,7 @@
 
 import * as store from './store.js';
 import { streamChat } from './providers.js';
-import { renderMarkdown, fileToBase64, compressImage, formatTime, toast, showModal } from './utils.js';
+import { renderMarkdown, fileToBase64, compressImage, formatTime, toast } from './utils.js';
 
 const DEFAULT_SYSTEM_PROMPT = '';
 
@@ -18,7 +18,6 @@ export function initChat() {
   document.getElementById('btn-send').onclick = sendMessage;
   document.getElementById('btn-pick-image').onclick = () => document.getElementById('chat-file-input').click();
   document.getElementById('chat-file-input').onchange = onFileChange;
-  document.getElementById('btn-chat-skills').onclick = openSkillsPicker;
 
   const input = document.getElementById('chat-input');
   input.addEventListener('keydown', e => {

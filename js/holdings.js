@@ -2,7 +2,7 @@
 
 import * as store from './store.js';
 import { PRESETS, streamChat } from './providers.js';
-import { fileToBase64, compressImage, extractJSON, toast, showModal, searchFund, searchFundByKeyword, getDataSource, fetchWithDispatcher } from './utils.js';
+import { fileToBase64, compressImage, extractJSON, toast, showModal, searchFund, searchFundByKeyword, getDataSource, fetchWithDispatcher, computeProfitToday, computeCumulative, computeSinceAdded, recordDailyEarnings } from './utils.js';
 
 let holdingSortState = 'none'; // none → desc → asc
 
@@ -315,11 +315,7 @@ async function refreshHoldings() {
       }
       // 今日收益
       const lastNav = parseFloat(h.lastNav) || 0;
-      if (lastNav > 0) {
-        h.profit_today = +((dwjz - lastNav) * share).toFixed(2);
-      } else if (data.gszzl) {
-        h.profit_today = +(h.market_value - h.market_value / (1 + data.gszzl / 100)).toFixed(2);
-      }
+      h.profit_today = computeProfitToday(h);
     }
 
     store.saveHolding(h);
@@ -354,11 +350,7 @@ async function refreshHoldings() {
           h.profit_ratio = +((h.market_value - cost) / cost * 100).toFixed(2);
         }
         const lastNav = parseFloat(h.lastNav) || 0;
-        if (lastNav > 0) {
-          h.profit_today = +((dwjz - lastNav) * share).toFixed(2);
-        } else if (data.gszzl) {
-          h.profit_today = +(h.market_value - h.market_value / (1 + data.gszzl / 100)).toFixed(2);
-        }
+        h.profit_today = computeProfitToday(h);
       }
       personUpdated = true;
       updated++;
@@ -459,8 +451,8 @@ function renderHoldingCard(h, target, diffInfo = null) {
       <div class="holding-detail">
         <div>净值: ${navText}${gsInfo}${gzTimeText}</div>
         <div>份额: ${shareText} · 市值: ${mv}</div>
-        <div>成本: ${cost>0 ? '¥'+cost.toFixed(2) : '—'}${costNavText ? ' ('+costNavText+')' : ''}</div>
-        <div>持仓收益: <span class="${prClass}">${prText}</span> · 累计: <span class="${profit>=0?'profit-pos':'profit-neg'}">${profit>=0?'+':''}¥${profit.toFixed(2)}</span>${todayText}${h.note ? ' · '+esc(h.note) : ''}</div>
+        <div>成本: ${cost>0 ? '¥'+cost.toFixed(2) : '—'}${costNavText ? ' ('+costNavText+')' : ''}${computeSinceAdded(h) !== null ? ' · <span class="'+(computeSinceAdded(h)>=0?'profit-pos':'profit-neg')+'">自添加'+(computeSinceAdded(h)>=0?'+':'')+computeSinceAdded(h).toFixed(2)+'%</span>' : ''}</div>
+        <div>持仓收益: <span class="${prClass}">${prText}</span> · 累计: <span class="${computeCumulative(h)>=0?'profit-pos':'profit-neg'}">${computeCumulative(h)>=0?'+':''}¥${computeCumulative(h).toFixed(2)}</span>${todayText}${h.note ? ' · '+esc(h.note) : ''}</div>
       </div>
     </div>
     <div class="holding-actions">
@@ -699,7 +691,7 @@ function openEditor(existing, target, personId) {
           const s = parseFloat(t.share) || 0;
           const p = parseFloat(t.price) || 0;
           if (t.type !== 'sell') { totalShare += s; totalCost += s * p; }
-          else { totalShare -= s; totalCost -= s * (totalShare > 0 ? totalCost/totalShare : 0); }
+          else { totalShare -= s; totalCost -= s * (totalShare > 0 ? totalCost/(totalShare+s) : 0); }
         }
         data.share = Math.max(0, +totalShare.toFixed(2));
         data.cost = +totalCost.toFixed(2);
@@ -728,6 +720,10 @@ function openEditor(existing, target, personId) {
       }
 
       if (!data.code || !data.name) { toast('代码和名称必填'); return; }
+      if (!isEdit && currentNav > 0) {
+        data.addBaseNav = currentNav;
+        data.addBaseDate = new Date().toISOString().slice(0, 10);
+      }
       if (target === 'follow') {
         store.saveFollowItem(personId, data);
         renderFollow();
@@ -949,7 +945,7 @@ function showTradeForm(modal, existing) {
       const s = parseFloat(t.share) || 0;
       const p = parseFloat(t.price) || 0;
       if (t.type !== 'sell') { totalShare += s; totalCost += s * p; }
-      else { totalShare -= s; totalCost -= s * (totalShare > 0 ? totalCost/totalShare : 0); }
+      else { totalShare -= s; totalCost -= s * (totalShare > 0 ? totalCost/(totalShare+s) : 0); }
     }
     const avgCost = totalShare > 0 ? +(totalCost/totalShare).toFixed(4) : 0;
     const shareInput = modal.querySelector('#h-share');
