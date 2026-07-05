@@ -404,8 +404,8 @@ async function calculatePortfolioOverlap(fundData) {
   const debug = [];
 
   debug.push(`持仓总数: ${holdings.length}`);
-  const myStockNames = (fundData.topHoldings || []).slice(0, 10);
-  debug.push(`本基金重仓股: ${myStockNames.join('、') || '(空)'}`);
+  const myTopNames = (fundData.topHoldings || []).slice(0, 10);
+  debug.push(`本基金重仓股: ${myTopNames.join('、') || '(空)'}`);
 
   if (!holdings.length) return { result: null, debug };
 
