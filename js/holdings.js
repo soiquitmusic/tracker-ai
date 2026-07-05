@@ -430,6 +430,7 @@ function renderHoldingCard(h, target, diffInfo = null) {
   const prClass = pr !== null ? (pr >= 0 ? 'profit-pos' : 'profit-neg') : '';
 
   const navText = dwjz > 0 ? dwjz.toFixed(4) : '—';
+  const trend = computeConsecutiveTrend(h._navList || []);
   const trendIcon = trend.days >= 3 ? (trend.type==='up'?'🔥':'❄️') : '';
   const trendStr = trend.days >= 3 ? ' ' + trendIcon + '连' + (trend.type==='up'?'涨':'跌') + trend.days + '天' : '';
   const gsInfo = gszzl !== 0 ? ` 估值: <span class="${gszzl>=0?'profit-pos':'profit-neg'}">${gszzl>=0?'+':''}${gszzl.toFixed(2)}%</span>` : '';
@@ -439,7 +440,6 @@ function renderHoldingCard(h, target, diffInfo = null) {
   const _navList = h._navList || [];
   const costNavText = share > 0 && cost > 0 ? `成本净值 ${(cost/share).toFixed(4)}` : '';
   const todayText = profit_today !== 0 ? ` 今日: <span class="${profit_today>=0?'profit-pos':'profit-neg'}">${profit_today>=0?'+':''}¥${profit_today.toFixed(2)}</span>` : '';
-  const trend = computeConsecutiveTrend(h._navList || []);
 
   let badgeHTML = '';
   if (diffInfo) {
