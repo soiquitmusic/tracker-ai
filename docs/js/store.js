@@ -128,6 +128,7 @@ export function normalizeHolding(h) {
     zzl: parseFloat(h.zzl) || 0,
     addBaseNav: parseFloat(h.addBaseNav) || 0,
     addBaseDate: h.addBaseDate || '',
+    realized_profit: parseFloat(h.realized_profit) || 0,
     profit: parseFloat(h.profit) || (cost > 0 ? mv - cost : 0),
     profit_today: parseFloat(h.profit_today) || 0,
   };
@@ -195,15 +196,15 @@ function recalcFromTrades(h) {
       totalShare += share;
       totalCost += share * price;
     } else if (t.type === 'sell') {
-      totalShare -= share;
-      // 卖出按平均成本扣减
       const avgCost = totalShare > 0 ? totalCost / totalShare : 0;
+      totalShare -= share;
       totalCost -= share * avgCost;
     }
   }
   h.share = Math.max(0, +totalShare.toFixed(2));
   h.cost = +totalCost.toFixed(2);
   h.cost_nav = h.share > 0 ? +(h.cost / h.share).toFixed(4) : 0;
+      h.realized_profit = (parseFloat(h.realized_profit) || 0) + (0);
 }
 
 export function getTrades(holdingId) {

@@ -1,5 +1,98 @@
 // ===== utils.js — 工具函数 =====
 
+// ====== 行情计算公式 ======
+
+// 统一当天收益 = C3 修复
+export function computeProfitToday(h) {
+  const share = h.share || 0;
+  const mv = h.market_value || 0;
+  const dwjz = h.dwjz || 0;
+  const lastNav = h.lastNav || 0;
+  const gszzl = h.gszzl || 0;
+  // 1. 优先: (dwjz - lastNav) * share (精确净值差)
+  if (lastNav > 0 && dwjz > 0) {
+    return +((dwjz - lastNav) * share).toFixed(2);
+  }
+  // 2. 备选: gszzl 反推昨日价值
+  if (gszzl !== 0 && mv > 0) {
+    return +(mv - mv / (1 + gszzl / 100)).toFixed(2);
+  }
+  // 3. 兜底
+  return 0;
+}
+
+// 累计收益 = 持有收益 + 已实现收益
+export function computeCumulative(h) {
+  const profit = h.profit || 0;
+  const realized = h.realized_profit || 0;
+  return +(profit + realized).toFixed(2);
+}
+
+// 累计收益率
+export function computeCumulativeRate(h) {
+  const cost = h.cost || 0;
+  if (cost <= 0) return 0;
+  const cum = computeCumulative(h);
+  return +((cum / cost) * 100).toFixed(2);
+}
+
+// 自添加来收益
+export function computeSinceAdded(h) {
+  if (!h.addBaseNav || h.addBaseNav <= 0) return null;
+  const nav = h.dwjz || h.gsz || 0;
+  if (nav <= 0) return null;
+  return +((nav / h.addBaseNav - 1) * 100).toFixed(2);
+}
+
+// 连涨连跌天数
+export function computeConsecutiveTrend(navs) {
+  if (!navs || navs.length < 2) return { type: null, days: 0 };
+  const dir = navs[navs.length - 1] > navs[navs.length - 2] ? 'up' : 'down';
+  let days = 1;
+  for (let i = navs.length - 1; i >= 1; i--) {
+    const cur = navs[i], prev = navs[i - 1];
+    if ((dir === 'up' && cur <= prev) || (dir === 'down' && cur >= prev)) break;
+    days++;
+  }
+  return { type: dir, days: days >= 3 ? days : 0 };
+}
+
+// 每日收益记录
+export function recordDailyEarnings(code, earnings, dateStr) {
+  try {
+    const key = 'fundDailyEarnings';
+    const all = JSON.parse(localStorage.getItem(key) || '{}');
+    const list = (all[code] || []).slice(-365);
+    const today = dateStr || new Date().toISOString().slice(0, 10);
+    const existing = list.find(e => e.date === today);
+    if (existing) { existing.earnings = +earnings.toFixed(2); }
+    else { list.push({ date: today, earnings: +earnings.toFixed(2) }); }
+    all[code] = list;
+    localStorage.setItem(key, JSON.stringify(all));
+  } catch {}
+}
+
+// YTD 累计收益
+export function computeYTD(code) {
+  try {
+    const all = JSON.parse(localStorage.getItem('fundDailyEarnings') || '{}');
+    const list = all[code] || [];
+    const year = new Date().getFullYear();
+    return +list.filter(e => e.date.startsWith(String(year))).reduce((s, e) => s + e.earnings, 0).toFixed(2);
+  } catch { return 0; }
+}
+
+// 近一周收益
+export function computeNearWeek(navs) {
+  if (!navs || navs.length < 7) return null;
+  const cur = navs[navs.length - 1];
+  const week = navs[navs.length - 7];
+  if (week <= 0) return null;
+  return +((cur / week - 1) * 100).toFixed(2);
+}
+
+// ====== 基础工具 ======
+
 export function uuid() {
   return crypto.randomUUID?.() ||
     'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {

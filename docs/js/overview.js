@@ -1,5 +1,6 @@
 // ===== overview.js - 行情总览（横向滚动表格） =====
 import * as store from './store.js';
+import { computeProfitToday, computeCumulative, computeSinceAdded, computeNearWeek, computeConsecutiveTrend } from './utils.js';
 import { toast, showModal, detectSectorFromHoldings, fetchWithDispatcher } from './utils.js';
 
 let refreshTimer = null, lastUpdateTime = null, fundRows = [], isRefreshing = false;
@@ -11,7 +12,7 @@ const ALL_COLUMNS = [
   { key:'sector', label:'关联板块', visible:true },
   { key:'change', label:'最新涨幅', visible:true },
   { key:'today', label:'当日收益', visible:true },
-  { key:'est', label:'盘中估值', visible:true },
+  { key:'est', label:'估算净值', visible:true },
   { key:'profit', label:'持有收益', visible:true },
   { key:'1M', label:'近1月', visible:true },
   { key:'3M', label:'近3月', visible:true },
@@ -171,11 +172,8 @@ async function refreshAll(silent){
       if(v){ dwjz=v.dwjz||dwjz; gsz=v.gsz||0; gszzl=v.gszzl||0; gztime=v.gztime||''; jzrq=v.jzrq||jzrq; if(!h.name&&v.name)h.name=v.name; }
       const ts=new Date().toISOString().slice(0,10),hasToday=jzrq===ts,ln=parseFloat(h.lastNav)||0;
       const mv=share>0&&dwjz>0?share*dwjz:(parseFloat(h.market_value)||0);
-      let tdp=0;
-      if(hasToday&&ln>0&&dwjz>0)tdp=(dwjz-ln)*share;
-      else if(!hasToday&&share>0&&gszzl!==0)tdp=mv-mv/(1+gszzl/100);
-      else if(ln>0&&dwjz>0)tdp=(dwjz-ln)*share;
-      else tdp=parseFloat(h.profit_today)||0;
+      h.lastNav=ln; h.dwjz=dwjz; h.market_value=mv;
+      let tdp=computeProfitToday(h)||0;
       const profit=cost>0?mv-cost:(parseFloat(h.profit)||0);
       let sector=(v?.sector)||''; if(!sector)sector=inferSector(h.name||'');
       const periods=v?.periods||{};
@@ -212,8 +210,8 @@ function renderRow(f,tmv,cols){
     sector:()=>`<td><span class="ov-sector-chip">${esc(f.sector||'—')}</span></td>`,
     change:()=>`<td class="ov-td-num ${gszzl>=0?'profit-pos':'profit-neg'}">${gszzl!==0?(gszzl>=0?'+':'')+gszzl.toFixed(2)+'%':'—'}</td>`,
     today:()=>{const c=f.todayProfit>=0?'profit-pos':'profit-neg';return`<td class="ov-td-num ${c}">${f.todayProfit!==0?(f.todayProfit>=0?'+':'')+'¥'+f.todayProfit.toFixed(2):'—'}</td>`;},
-    est:()=>{const c=gszzl>=0?'profit-pos':'profit-neg';return`<td class="ov-td-num ${c}">${gszzl!==0?(gszzl>=0?'+':'')+gszzl.toFixed(2)+'%':'—'}</td>`;},
-    profit:()=>`<td class="ov-td-num ${f.profit>=0?'profit-pos':'profit-neg'}"><div>${f.profit>=0?'+':''}¥${f.profit.toFixed(2)}</div><div class="ov-sub">${ratio>=0?'+':''}${ratio.toFixed(2)}%</div></td>`,
+    est:()=>{const g=f.gsz||0;return`<td class="ov-td-num">${g>0?g.toFixed(4):(f.dwjz>0?f.dwjz.toFixed(4):'—')}<div class="ov-sub">${f.gztime?f.gztime.slice(-5):''}</div></td>`;},
+    profit:()=>{const cp=f.profit+(f.realized_profit||0);const cs=cp>=0?'+':'';return`<td class="ov-td-num ${f.profit>=0?'profit-pos':'profit-neg'}"><div>${f.profit>=0?'+':''}¥${f.profit.toFixed(2)}</div><div class="ov-sub">累计${cs}¥${cp.toFixed(0)}</div></td>`;},
     '1M':()=>`<td class="ov-td-num">${fmtP(p['1M'])}</td>`,
     '3M':()=>`<td class="ov-td-num">${fmtP(p['3M'])}</td>`,
     '6M':()=>`<td class="ov-td-num">${fmtP(p['6M'])}</td>`,
