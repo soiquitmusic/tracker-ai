@@ -130,7 +130,7 @@ function fetchFundF10Nav(code) {
     const script = document.createElement('script');
     script.id = cbName;
     // F10DataApi.aspx 不回调，而是设置 window.apidata
-    script.src = `https://fundf10.eastmoney.com/F10DataApi.aspx?type=lsjz&code=${encodeURIComponent(code)}&page=1&per=3&sdate=&edate=`;
+    script.src = `https://fundf10.eastmoney.com/F10DataApi.aspx?type=lsjz&code=${encodeURIComponent(code)}&page=1&per=20&sdate=&edate=`;
     script.onload = () => {
       setTimeout(() => {
         try {
@@ -139,6 +139,7 @@ function fetchFundF10Nav(code) {
             const content = apidata.content;
             const rows = content.match(/<tr[^>]*>[\s\S]*?<\/tr>/gi) || [];
             const records = [];
+            const navValues = [];
             for (const row of rows) {
               const tds = row.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
               if (tds.length >= 4) {
@@ -147,12 +148,13 @@ function fetchFundF10Nav(code) {
                 if (date && !isNaN(nav) && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
                   const zzl = parseFloat(tds[3].replace(/<[^>]+>/g, '').replace('%', '').trim());
                   records.push({ date, nav, zzl: isNaN(zzl) ? 0 : zzl });
+                  navValues.push(nav);
                 }
               }
             }
             if (records.length > 0) {
               cleanup();
-              resolve({ dwjz: records[0].nav, lastNav: records.length>1?records[1].nav:0, jzrq: records[0].date, zzl: records[0].zzl, source: 'f10' });
+              resolve({ dwjz: records[0].nav, lastNav: records.length>1?records[1].nav:0, jzrq: records[0].date, zzl: records[0].zzl, source: 'f10', navList: navValues.slice(0, 30) });
             }
           }
         } catch(e) { /* ignore */ }
@@ -314,6 +316,7 @@ async function refreshHoldings() {
         h.profit_ratio = +((h.market_value - cost) / cost * 100).toFixed(2);
       }
       // 今日收益
+      if (data.navList && data.navList.length >= 2) { h._navList = data.navList; }
       const lastNav = parseFloat(h.lastNav) || 0;
       h.profit_today = computeProfitToday(h);
     }
@@ -427,12 +430,16 @@ function renderHoldingCard(h, target, diffInfo = null) {
   const prClass = pr !== null ? (pr >= 0 ? 'profit-pos' : 'profit-neg') : '';
 
   const navText = dwjz > 0 ? dwjz.toFixed(4) : '—';
+  const trendIcon = trend.days >= 3 ? (trend.type==='up'?'🔥':'❄️') : '';
+  const trendStr = trend.days >= 3 ? ' ' + trendIcon + '连' + (trend.type==='up'?'涨':'跌') + trend.days + '天' : '';
   const gsInfo = gszzl !== 0 ? ` 估值: <span class="${gszzl>=0?'profit-pos':'profit-neg'}">${gszzl>=0?'+':''}${gszzl.toFixed(2)}%</span>` : '';
   const gzTimeText = h.gztime ? ` <span style="font-size:10px;color:var(--text-soft);">${h.gztime.slice(-5)}</span>` : '';
 
   const shareText = share > 0 ? `${share.toFixed(2)} 份` : '—';
+  const _navList = h._navList || [];
   const costNavText = share > 0 && cost > 0 ? `成本净值 ${(cost/share).toFixed(4)}` : '';
   const todayText = profit_today !== 0 ? ` 今日: <span class="${profit_today>=0?'profit-pos':'profit-neg'}">${profit_today>=0?'+':''}¥${profit_today.toFixed(2)}</span>` : '';
+  const trend = computeConsecutiveTrend(h._navList || []);
 
   let badgeHTML = '';
   if (diffInfo) {

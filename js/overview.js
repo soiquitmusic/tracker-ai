@@ -226,13 +226,26 @@ function renderRow(f,tmv,cols){
 
 function openColumnSettings(){
   const cols=getColumnConfig();
-  const lh=cols.map((c,i)=>`<div class="col-setting-row" data-idx="${i}"><span class="col-drag-handle">⠿</span><label class="settings-toggle" style="flex:1;margin:0;"><input type="checkbox" ${c.visible?'checked':''} ${c.fixed?'disabled':''}>${c.label}${c.fixed?' (固定)':''}</label>${!c.fixed?`<button class="btn" style="font-size:10px;padding:2px 6px;" data-mv="${i}" data-dir="up">↑</button><button class="btn" style="font-size:10px;padding:2px 6px;" data-mv="${i}" data-dir="down">↓</button>`:''}</div>`).join('');
-  showModal('列设置',`<div class="col-settings-list">${lh}</div>`,[
+  const lh=cols.map((c,i)=>`<div class="col-setting-row" draggable="true" data-idx="${i}"><span class="col-drag-handle">⠿</span><label class="settings-toggle" style="flex:1;margin:0;"><input type="checkbox" ${c.visible?'checked':''} ${c.fixed?'disabled':''}>${c.label}${c.fixed?' (固定)':''}</label></div>`).join('');
+  showModal('列设置',`<div class="col-settings-list" id="col-settings-list">${lh}</div>`,[
     {text:'重置',onClick:()=>{saveColumnConfig(ALL_COLUMNS);renderTable();}},
     {text:'确定',cls:'primary',onClick:(m,cl)=>{ const nc=[]; m.querySelectorAll('.col-setting-row').forEach(r=>{ const i=parseInt(r.dataset.idx),cb=r.querySelector('input'); if(i>=0&&i<cols.length)nc.push({...cols[i],visible:cb.checked}); }); if(nc.length){saveColumnConfig(nc);renderTable();} cl(); }}
   ]);
-  setTimeout(()=>{ const mk=document.querySelector('.modal-mask'); if(!mk)return;
-    mk.querySelectorAll('[data-mv]').forEach(b=>{ b.onclick=()=>{ const i=parseInt(b.dataset.mv),d=b.dataset.dir,cs=getColumnConfig(); if(cs[i].fixed)return; const si=d==='up'?i-1:i+1; if(si<0||si>=cs.length||cs[si].fixed)return; [cs[i],cs[si]]=[cs[si],cs[i]]; saveColumnConfig(cs); mk.remove(); openColumnSettings(); }; });
+  setTimeout(()=>{
+    const list=document.getElementById('col-settings-list'); if(!list)return;
+    let dragIdx=null;
+    list.querySelectorAll('.col-setting-row').forEach(row=>{
+      row.addEventListener('dragstart',e=>{ dragIdx=parseInt(row.dataset.idx); e.dataTransfer.effectAllowed='move'; });
+      row.addEventListener('dragover',e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; });
+      row.addEventListener('drop',e=>{
+        e.preventDefault(); const toIdx=parseInt(row.dataset.idx);
+        if(dragIdx===null||dragIdx===toIdx)return;
+        const cs=getColumnConfig(); const dragged=cs[dragIdx]; if(dragged.fixed)return;
+        cs.splice(dragIdx,1); const insertAt=cs.findIndex((_,i)=>i===toIdx-(dragIdx<toIdx?1:0));
+        cs.splice(insertAt,0,dragged); saveColumnConfig(cs);
+        document.querySelector('.modal-mask')?.remove(); openColumnSettings();
+      });
+    });
   },100);
 }
 
