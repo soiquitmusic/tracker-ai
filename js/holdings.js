@@ -2,7 +2,7 @@
 
 import * as store from './store.js';
 import { PRESETS, streamChat } from './providers.js';
-import { fileToBase64, compressImage, extractJSON, toast, showModal, searchFund, searchFundByKeyword, getDataSource, fetchWithDispatcher, computeProfitToday, computeCumulative, computeSinceAdded, recordDailyEarnings } from './utils.js';
+import { fileToBase64, compressImage, extractJSON, toast, showModal, searchFund, searchFundByKeyword, getDataSource, fetchWithDispatcher, computeProfitToday, computeCumulative, computeSinceAdded, recordDailyEarnings, computeConsecutiveTrend } from './utils.js';
 
 let holdingSortState = 'none'; // none → desc → asc
 
