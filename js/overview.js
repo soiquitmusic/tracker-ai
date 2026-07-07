@@ -172,8 +172,10 @@ async function refreshAll(silent){
       if(v){ dwjz=v.dwjz||dwjz; gsz=v.gsz||0; gszzl=v.gszzl||0; gztime=v.gztime||''; jzrq=v.jzrq||jzrq; if(!h.name&&v.name)h.name=v.name; }
       const ts=new Date().toISOString().slice(0,10),hasToday=jzrq===ts,ln=parseFloat(h.lastNav)||0;
       const mv=share>0&&dwjz>0?share*dwjz:(parseFloat(h.market_value)||0);
-      h.lastNav=ln; h.dwjz=dwjz; h.market_value=mv;
-      let tdp=computeProfitToday(h)||0;
+      let tdp=0;
+      if(hasToday&&ln>0&&dwjz>0)tdp=(dwjz-ln)*share;
+      else if(!hasToday&&share>0&&gszzl!==0)tdp=mv-mv/(1+gszzl/100);
+      else if(ln>0&&dwjz>0)tdp=(dwjz-ln)*share;
       const profit=cost>0?mv-cost:(parseFloat(h.profit)||0);
       let sector=(v?.sector)||''; if(!sector)sector=inferSector(h.name||'');
       const periods=v?.periods||{};
